@@ -14,15 +14,6 @@ function mergeKey(aisle: string, unit: string, name: string): string {
   return `${aisle}||${unit}||${normalizeName(name)}`;
 }
 
-/** Même clé que pour l’agrégation / la liste `suppressedAggKeys`. */
-export function ingredientMergeKey(
-  aisle: string,
-  unit: string,
-  name: string
-): string {
-  return mergeKey(aisle, unit, name);
-}
-
 export function aggLineId(aisle: string, unit: string, name: string): string {
   const mk = mergeKey(aisle, unit, name);
   return `agg:${Buffer.from(mk).toString("base64url")}`;
@@ -37,19 +28,27 @@ function roundDisplay(quantity: number, unit: string): number {
   return Math.round(quantity * 100) / 100;
 }
 
-export function rebuildShoppingLines(
-  recipes: StoredRecipe[],
-  targetPortions: Record<string, number>,
-  previous: ShoppingLine[],
-  suppressedKeys: Set<string> = new Set()
+/**
+ * Ajoute ou met à jour les lignes issues des recettes **nouvellement importées** dans la liste
+ * existante (sans toucher aux recettes déjà présentes dans `shoppingLines`).
+ */
+export function mergeImportedRecipesIntoShoppingLines(
+  shoppingLines: ShoppingLine[],
+  newRecipes: StoredRecipe[],
+  targetPortions: Record<string, number>
 ): ShoppingLine[] {
-  const prevById = new Map(previous.map((l) => [l.id, l]));
+  const lines = shoppingLines.map((l) => ({ ...l }));
+  const keyToLine = new Map<string, ShoppingLine>();
+  for (const l of lines) {
+    if (l.manual || l.extraIngredient) continue;
+    keyToLine.set(mergeKey(l.aisle, l.unit, l.name), l);
+  }
+
   const bucket = new Map<
     string,
     { name: string; unit: string; aisle: string; quantity: number }
   >();
-
-  for (const r of recipes) {
+  for (const r of newRecipes) {
     if (r.removedFromPlan) continue;
     const base = r.basePortions;
     const target = targetPortions[r.recipeInstanceId] ?? base;
@@ -69,30 +68,25 @@ export function rebuildShoppingLines(
     }
   }
 
-  const manual = previous.filter((l) => l.manual);
-  const aggregated: ShoppingLine[] = [];
-
-  for (const [key, v] of bucket) {
-    if (suppressedKeys.has(key)) continue;
-    const id = aggLineId(v.aisle, v.unit, v.name);
-    const prev = prevById.get(id);
-    aggregated.push({
-      id,
-      name: v.name,
-      quantity: roundDisplay(v.quantity, v.unit),
-      unit: v.unit,
-      aisle: v.aisle,
-      checked: prev?.checked ?? false,
-      manual: false,
-    });
+  for (const [, v] of bucket) {
+    const key = mergeKey(v.aisle, v.unit, v.name);
+    const existing = keyToLine.get(key);
+    if (existing) {
+      existing.quantity = roundDisplay(existing.quantity + v.quantity, v.unit);
+    } else {
+      const nl: ShoppingLine = {
+        id: aggLineId(v.aisle, v.unit, v.name),
+        name: v.name,
+        quantity: roundDisplay(v.quantity, v.unit),
+        unit: v.unit,
+        aisle: v.aisle,
+        checked: false,
+        manual: false,
+      };
+      lines.push(nl);
+      keyToLine.set(key, nl);
+    }
   }
 
-  aggregated.sort((a, b) => {
-    const aisleCmp = a.aisle.localeCompare(b.aisle, "fr");
-    if (aisleCmp !== 0) return aisleCmp;
-    return a.name.localeCompare(b.name, "fr");
-  });
-  manual.sort((a, b) => a.name.localeCompare(b.name, "fr"));
-
-  return [...manual, ...aggregated];
+  return lines;
 }

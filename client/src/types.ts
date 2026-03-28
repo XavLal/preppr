@@ -39,6 +39,4 @@ export type AppState = {
   recipes: StoredRecipe[];
   shoppingLines: ShoppingLine[];
   targetPortions: Record<string, number>;
-  /** Lignes agrégées retirées manuellement (ne pas régénérer). */
-  suppressedAggKeys?: string[];
 };

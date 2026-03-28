@@ -11,6 +11,17 @@ export function validateStateTransition(
   prev: AppState,
   next: AppState
 ): void {
+  const prevShop = new Map(prev.shoppingLines.map((l) => [l.id, l]));
+  const nextShop = new Map(next.shoppingLines.map((l) => [l.id, l]));
+
+  for (const [id, line] of prevShop) {
+    if (!nextShop.has(id) && !line.checked) {
+      throw new StateValidationError(
+        "Cochez l’article avant de le retirer de la liste de courses."
+      );
+    }
+  }
+
   const prevRecipes = new Map(prev.recipes.map((r) => [r.recipeInstanceId, r]));
   for (const r of next.recipes) {
     const was = prevRecipes.get(r.recipeInstanceId);

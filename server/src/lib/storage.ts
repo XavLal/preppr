@@ -1,7 +1,6 @@
 import { mkdir, readFile, writeFile, readdir, unlink } from "fs/promises";
 import path from "path";
 import type { AppState } from "./types.js";
-import { rebuildShoppingLines } from "./shopping.js";
 
 export type AccountUser = { login: string; passwordHash: string };
 export type AccountsFile = { users: AccountUser[] };
@@ -34,7 +33,6 @@ export function emptyState(): AppState {
     recipes: [],
     shoppingLines: [],
     targetPortions: {},
-    suppressedAggKeys: [],
   };
 }
 
@@ -98,13 +96,3 @@ async function pruneSnapshots(hist: string): Promise<void> {
   }
 }
 
-export function recomputeShopping(state: AppState): AppState {
-  const suppressed = new Set(state.suppressedAggKeys ?? []);
-  const lines = rebuildShoppingLines(
-    state.recipes,
-    state.targetPortions,
-    state.shoppingLines,
-    suppressed
-  );
-  return { ...state, shoppingLines: lines };
-}

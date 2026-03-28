@@ -40,10 +40,4 @@ export type AppState = {
   shoppingLines: ShoppingLine[];
   /** target portions per recipeInstanceId; default = basePortions from recipe */
   targetPortions: Record<string, number>;
-  /**
-   * Clés d’agrégation (rayon + unité + nom normalisé) des lignes issues des recettes
-   * que l’utilisateur a retirées volontairement — elles ne sont pas régénérées tant
-   * que l’ingrédient reste dans les recettes.
-   */
-  suppressedAggKeys?: string[];
 };

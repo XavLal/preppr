@@ -8,12 +8,8 @@ import { fileURLToPath } from "url";
 import { randomUUID } from "node:crypto";
 import { importPayloadSchema } from "./lib/schemas.js";
 import { tenantSlugFromLogin } from "./lib/slug.js";
-import {
-  loadAccounts,
-  loadState,
-  saveState,
-  recomputeShopping,
-} from "./lib/storage.js";
+import { loadAccounts, loadState, saveState } from "./lib/storage.js";
+import { mergeImportedRecipesIntoShoppingLines } from "./lib/shopping.js";
 import {
   validateStateTransition,
   validateRecipesRemoved,
@@ -128,11 +124,8 @@ app.put("/api/state", async (req, reply) => {
     }
     throw e;
   }
-  const next = recomputeShopping(nextRaw);
-  next.version = body.expectedVersion + 1;
-  next.updatedAt = new Date().toISOString();
-  await saveState(auth.sub, next);
-  return next;
+  await saveState(auth.sub, nextRaw);
+  return nextRaw;
 });
 
 app.post("/api/clear-recipes", async (req, reply) => {
@@ -149,16 +142,14 @@ app.post("/api/clear-recipes", async (req, reply) => {
       state: prev,
     });
   }
-  const nextRaw: AppState = {
+  const next: AppState = {
     ...prev,
     recipes: [],
     targetPortions: {},
-    suppressedAggKeys: [],
+    shoppingLines: prev.shoppingLines.filter((l) => l.manual),
+    version: body.expectedVersion + 1,
     updatedAt: new Date().toISOString(),
   };
-  const next = recomputeShopping(nextRaw);
-  next.version = body.expectedVersion + 1;
-  next.updatedAt = new Date().toISOString();
   await saveState(auth.sub, next);
   return next;
 });
@@ -177,15 +168,12 @@ app.post("/api/clear-shopping", async (req, reply) => {
       state: prev,
     });
   }
-  const nextRaw: AppState = {
+  const next: AppState = {
     ...prev,
     shoppingLines: [],
-    suppressedAggKeys: [],
+    version: body.expectedVersion + 1,
     updatedAt: new Date().toISOString(),
   };
-  const next = recomputeShopping(nextRaw);
-  next.version = body.expectedVersion + 1;
-  next.updatedAt = new Date().toISOString();
   await saveState(auth.sub, next);
   return next;
 });
@@ -241,15 +229,18 @@ app.post("/api/import", async (req, reply) => {
     extraIngredient: true,
   }));
 
-  const nextRaw: AppState = {
+  const shoppingLines = mergeImportedRecipesIntoShoppingLines(
+    [...prev.shoppingLines, ...extraLines],
+    newRecipes,
+    prev.targetPortions
+  );
+  const next: AppState = {
     ...prev,
     recipes: [...prev.recipes, ...newRecipes],
-    shoppingLines: [...prev.shoppingLines, ...extraLines],
+    shoppingLines,
+    version: prev.version + 1,
     updatedAt: new Date().toISOString(),
   };
-  const next = recomputeShopping(nextRaw);
-  next.version = prev.version + 1;
-  next.updatedAt = new Date().toISOString();
   await saveState(auth.sub, next);
   return next;
 });
