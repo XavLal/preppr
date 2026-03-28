@@ -14,6 +14,18 @@
   box-sizing: border-box;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -217,6 +229,9 @@ h2 {
 .shop-toolbar {
   margin-bottom: 1.25rem;
 }
+.shop-reorder-hint {
+  margin: -0.35rem 0 1rem;
+}
 
 .recipe-list {
   list-style: none;
@@ -339,6 +354,54 @@ h2 {
 .aisle-block {
   margin-top: 1.25rem;
 }
+.aisle-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+.aisle-block-head h2 {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 1.15rem;
+}
+.btn.aisle-add-btn {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  line-height: 1;
+  font-size: 1.35rem;
+  font-weight: 600;
+  border-radius: 8px;
+  color: var(--accent-dark);
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.btn.aisle-add-btn:hover {
+  border-color: var(--accent);
+  background: #e8f5f1;
+}
+
+.shop-ingredient-form .field-qty-unit .qty-unit-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+.shop-ingredient-form .shop-form-qty {
+  width: 5.25rem;
+  flex-shrink: 0;
+}
+.shop-ingredient-form .shop-form-unit {
+  flex: 1;
+  min-width: 0;
+}
+.shop-form-aisle-hint {
+  margin: -0.15rem 0 0.65rem;
+}
 .shop-list {
   list-style: none;
   padding: 0;
@@ -355,6 +418,44 @@ h2 {
 .shop-list li.checked {
   opacity: 0.55;
   text-decoration: line-through;
+}
+.shop-list li.shop-li-dragging {
+  opacity: 0.45;
+}
+
+.shop-drag-handle {
+  flex-shrink: 0;
+  align-self: center;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  padding: 0.35rem 0.2rem;
+  margin: -0.35rem 0;
+  color: #7a8a88;
+  font-size: 0.65rem;
+  line-height: 1;
+  letter-spacing: -0.12em;
+}
+.shop-drag-handle:active {
+  cursor: grabbing;
+}
+
+.shop-line-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+.shop-reorder-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+.btn.icon {
+  min-width: 2rem;
+  padding: 0.15rem 0.3rem;
+  font-size: 0.8rem;
+  line-height: 1.1;
 }
 
 .shop-line-main {
@@ -424,5 +525,19 @@ h2 {
   }
   .grid-2 {
     grid-template-columns: 1fr;
+  }
+
+  .modal-backdrop {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: max(0.35rem, env(safe-area-inset-top, 0px)) 0.75rem 1rem;
+  }
+  .modal-backdrop .card.modal {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    max-height: min(92vh, calc(100dvh - env(safe-area-inset-top, 0px) - 1.25rem));
+    border-radius: 0 0 14px 14px;
   }
 }

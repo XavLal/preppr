@@ -1,5 +1,9 @@
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type DragEvent, type FormEvent, useEffect, useMemo, useState } from "react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import {
+  moveLineStepInAisle,
+  moveLineWithinAisle,
+} from "@/lib/reorderShoppingAisle";
 import { useAppStore } from "@/store/useAppStore";
 import {
   aisleForSelect,
@@ -31,6 +35,9 @@ export default function ShoppingPage() {
   const [formBusy, setFormBusy] = useState(false);
   const [clearShoppingOpen, setClearShoppingOpen] = useState(false);
   const [clearShoppingBusy, setClearShoppingBusy] = useState(false);
+  const [draggingLineId, setDraggingLineId] = useState<string | null>(null);
+  /** Rayon imposé (bouton + à côté du titre de rayon) : le select est masqué. */
+  const [lockAisleInForm, setLockAisleInForm] = useState(false);
 
   const grouped = useMemo(() => {
     const lines = state?.shoppingLines ?? [];
@@ -49,10 +56,21 @@ export default function ShoppingPage() {
     setQty("1");
     setUnit("pièce");
     setEditingLineId(null);
+    setLockAisleInForm(false);
   }
 
   function openAddModal() {
     resetForm();
+    setModalOpen(true);
+  }
+
+  function openAddModalForAisle(aisleName: string) {
+    setEditingLineId(null);
+    setName("");
+    setQty("1");
+    setUnit("pièce");
+    setAisle(aisleForSelect(aisleName));
+    setLockAisleInForm(true);
     setModalOpen(true);
   }
 
@@ -62,6 +80,7 @@ export default function ShoppingPage() {
     setAisle(aisleForSelect(line.aisle));
     setQty(String(line.quantity));
     setUnit(unitForSelect(line.unit));
+    setLockAisleInForm(false);
     setModalOpen(true);
   }
 
@@ -83,6 +102,42 @@ export default function ShoppingPage() {
     await commit((d) => {
       d.shoppingLines = d.shoppingLines.filter((x) => x.id !== id);
     });
+  }
+
+  async function persistLineOrder(nextLines: ShoppingLine[]) {
+    await commit((d) => {
+      d.shoppingLines = nextLines;
+    });
+  }
+
+  async function moveInAisle(aisleName: string, lineId: string, dir: -1 | 1) {
+    const cur = state?.shoppingLines;
+    if (!cur) return;
+    const next = moveLineStepInAisle(cur, aisleName, lineId, dir);
+    if (next) await persistLineOrder(next);
+  }
+
+  function onDragStartLine(e: DragEvent, lineId: string) {
+    e.dataTransfer.setData("text/plain", lineId);
+    e.dataTransfer.effectAllowed = "move";
+    setDraggingLineId(lineId);
+  }
+
+  async function onDropOnLine(
+    e: DragEvent,
+    aisleName: string,
+    targetLineId: string
+  ) {
+    e.preventDefault();
+    const fromId = e.dataTransfer.getData("text/plain");
+    setDraggingLineId(null);
+    const cur = state?.shoppingLines;
+    if (!fromId || !cur) return;
+    const fromLine = cur.find((x) => x.id === fromId);
+    if (!fromLine || fromLine.aisle !== aisleName || fromId === targetLineId)
+      return;
+    const next = moveLineWithinAisle(cur, aisleName, fromId, targetLineId);
+    await persistLineOrder(next);
   }
 
   async function submitForm(e: FormEvent) {
@@ -119,6 +174,7 @@ export default function ShoppingPage() {
   }
 
   const isEdit = editingLineId !== null;
+  const showAisleField = isEdit || !lockAisleInForm;
 
   const lineCount = state?.shoppingLines.length ?? 0;
   const canBulkClearShopping = online && !pendingSync && lineCount > 0;
@@ -149,6 +205,9 @@ export default function ShoppingPage() {
           Ajouter un ingrédient
         </button>
       </div>
+      <p className="muted small shop-reorder-hint">
+        Dans un même rayon : poignée ⋮⋮ pour glisser-déposer, ou flèches pour déplacer d’une ligne.
+      </p>
 
       {modalOpen ? (
         <div
@@ -164,7 +223,7 @@ export default function ShoppingPage() {
             <h2 id="ingredient-form-title">
               {isEdit ? "Modifier l’ingrédient" : "Ajouter un ingrédient"}
             </h2>
-            <form onSubmit={submitForm}>
+            <form onSubmit={submitForm} className="shop-ingredient-form">
               <label className="field">
                 <span>Nom</span>
                 <input
@@ -174,28 +233,45 @@ export default function ShoppingPage() {
                   autoFocus
                 />
               </label>
-              <label className="field">
-                <span>Rayon</span>
-                <select
-                  value={aisle}
-                  onChange={(e) => setAisle(e.target.value)}
-                  required
-                >
-                  {SHOP_AISLES.map((a) => (
-                    <option key={a} value={a}>
-                      {a}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="grid-2">
+              {showAisleField ? (
                 <label className="field">
-                  <span>Quantité</span>
-                  <input value={qty} onChange={(e) => setQty(e.target.value)} />
-                </label>
-                <label className="field">
-                  <span>Unité</span>
+                  <span>Rayon</span>
                   <select
+                    value={aisle}
+                    onChange={(e) => setAisle(e.target.value)}
+                    required
+                  >
+                    {SHOP_AISLES.map((a) => (
+                      <option key={a} value={a}>
+                        {a}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <p className="muted small shop-form-aisle-hint">
+                  Rayon : <strong>{aisle}</strong>
+                </p>
+              )}
+              <div className="field field-qty-unit">
+                <span>Quantité et unité</span>
+                <div className="qty-unit-row">
+                  <label className="sr-only" htmlFor="shop-form-qty">
+                    Quantité
+                  </label>
+                  <input
+                    id="shop-form-qty"
+                    className="shop-form-qty"
+                    value={qty}
+                    onChange={(e) => setQty(e.target.value)}
+                    inputMode="decimal"
+                  />
+                  <label className="sr-only" htmlFor="shop-form-unit">
+                    Unité
+                  </label>
+                  <select
+                    id="shop-form-unit"
+                    className="shop-form-unit"
                     value={unit}
                     onChange={(e) => setUnit(e.target.value)}
                     required
@@ -206,7 +282,7 @@ export default function ShoppingPage() {
                       </option>
                     ))}
                   </select>
-                </label>
+                </div>
               </div>
               <div className="row end">
                 <button type="button" className="btn ghost" onClick={closeModal}>
@@ -229,11 +305,46 @@ export default function ShoppingPage() {
 
       {grouped.map(([aisleName, lines]) => (
         <section key={aisleName} className="aisle-block">
-          <h2>{aisleName}</h2>
+          <div className="aisle-block-head">
+            <h2>{aisleName}</h2>
+            <button
+              type="button"
+              className="btn aisle-add-btn"
+              aria-label={`Ajouter un produit dans ${aisleName}`}
+              title="Ajouter dans ce rayon"
+              onClick={() => openAddModalForAisle(aisleName)}
+            >
+              +
+            </button>
+          </div>
           <ul className="shop-list">
-            {lines.map((l) => (
-              <li key={l.id} className={l.checked ? "checked" : ""}>
+            {lines.map((l, idx) => (
+              <li
+                key={l.id}
+                className={[
+                  l.checked ? "checked" : "",
+                  draggingLineId === l.id ? "shop-li-dragging" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }}
+                onDrop={(e) => void onDropOnLine(e, aisleName, l.id)}
+              >
                 <div className="shop-line-main">
+                  <span
+                    className="shop-drag-handle"
+                    draggable
+                    title="Glisser pour réordonner dans ce rayon"
+                    aria-label={`Réordonner ${l.name}`}
+                    onDragStart={(e) => onDragStartLine(e, l.id)}
+                    onDragEnd={() => setDraggingLineId(null)}
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    ⋮⋮
+                  </span>
                   <label className="check shop-line-check">
                     <input
                       type="checkbox"
@@ -260,15 +371,41 @@ export default function ShoppingPage() {
                     ) : null}
                   </button>
                 </div>
-                <button
-                  type="button"
-                  className="btn ghost danger"
-                  disabled={!l.checked}
-                  title={l.checked ? "Retirer de la liste" : "Cochez l’article d’abord"}
-                  onClick={() => void removeLine(l.id)}
-                >
-                  Retirer
-                </button>
+                <div className="shop-line-actions">
+                  <div
+                    className="shop-reorder-btns"
+                    role="group"
+                    aria-label={`Position dans ${aisleName}`}
+                  >
+                    <button
+                      type="button"
+                      className="btn icon ghost"
+                      disabled={idx === 0}
+                      aria-label={`Monter ${l.name}`}
+                      onClick={() => void moveInAisle(aisleName, l.id, -1)}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className="btn icon ghost"
+                      disabled={idx === lines.length - 1}
+                      aria-label={`Descendre ${l.name}`}
+                      onClick={() => void moveInAisle(aisleName, l.id, 1)}
+                    >
+                      ↓
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn ghost danger"
+                    disabled={!l.checked}
+                    title={l.checked ? "Retirer de la liste" : "Cochez l’article d’abord"}
+                    onClick={() => void removeLine(l.id)}
+                  >
+                    Retirer
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
