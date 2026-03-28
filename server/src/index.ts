@@ -19,7 +19,7 @@ import {
   validateRecipesRemoved,
   StateValidationError,
 } from "./lib/validate.js";
-import type { AppState, StoredRecipe } from "./lib/types.js";
+import type { AppState, ShoppingLine, StoredRecipe } from "./lib/types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -135,6 +135,59 @@ app.put("/api/state", async (req, reply) => {
   return next;
 });
 
+app.post("/api/clear-recipes", async (req, reply) => {
+  const auth = parseAuth(req, reply);
+  if (!auth) return;
+  const body = req.body as { expectedVersion?: number };
+  if (body.expectedVersion === undefined) {
+    return reply.status(400).send({ error: "expectedVersion requis." });
+  }
+  const prev = await loadState(auth.sub);
+  if (prev.version !== body.expectedVersion) {
+    return reply.status(409).send({
+      error: "Conflit de version",
+      state: prev,
+    });
+  }
+  const nextRaw: AppState = {
+    ...prev,
+    recipes: [],
+    targetPortions: {},
+    updatedAt: new Date().toISOString(),
+  };
+  const next = recomputeShopping(nextRaw);
+  next.version = body.expectedVersion + 1;
+  next.updatedAt = new Date().toISOString();
+  await saveState(auth.sub, next);
+  return next;
+});
+
+app.post("/api/clear-shopping", async (req, reply) => {
+  const auth = parseAuth(req, reply);
+  if (!auth) return;
+  const body = req.body as { expectedVersion?: number };
+  if (body.expectedVersion === undefined) {
+    return reply.status(400).send({ error: "expectedVersion requis." });
+  }
+  const prev = await loadState(auth.sub);
+  if (prev.version !== body.expectedVersion) {
+    return reply.status(409).send({
+      error: "Conflit de version",
+      state: prev,
+    });
+  }
+  const nextRaw: AppState = {
+    ...prev,
+    shoppingLines: [],
+    updatedAt: new Date().toISOString(),
+  };
+  const next = recomputeShopping(nextRaw);
+  next.version = body.expectedVersion + 1;
+  next.updatedAt = new Date().toISOString();
+  await saveState(auth.sub, next);
+  return next;
+});
+
 app.post("/api/import", async (req, reply) => {
   const auth = parseAuth(req, reply);
   if (!auth) return;
@@ -175,9 +228,21 @@ app.post("/api/import", async (req, reply) => {
     ingredients: r.ingredients.map((i) => ({ ...i })),
     steps: [...r.steps],
   }));
+  const extraLines: ShoppingLine[] = payload.extraIngredients.map((ing) => ({
+    id: randomUUID(),
+    name: ing.name,
+    quantity: ing.quantity,
+    unit: ing.unit,
+    aisle: ing.aisle,
+    checked: false,
+    manual: true,
+    extraIngredient: true,
+  }));
+
   const nextRaw: AppState = {
     ...prev,
     recipes: [...prev.recipes, ...newRecipes],
+    shoppingLines: [...prev.shoppingLines, ...extraLines],
     updatedAt: new Date().toISOString(),
   };
   const next = recomputeShopping(nextRaw);

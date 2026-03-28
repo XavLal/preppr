@@ -25,6 +25,11 @@ export const importRecipeSchema = z.object({
 export const importPayloadSchema = z.object({
   weekId: z.string(),
   recipes: z.array(importRecipeSchema),
+  /** Ingrédients hors recettes (courses, hygiène, etc.) */
+  extraIngredients: z
+    .array(ingredientSchema)
+    .nullish()
+    .transform((x) => x ?? []),
 });
 
 export type ImportPayload = z.infer<typeof importPayloadSchema>;

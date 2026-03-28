@@ -59,6 +59,24 @@ a:hover {
   color: var(--accent);
 }
 
+.offline-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #8a4b12;
+  background: #fff3e0;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+
+.sync-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent-dark);
+  background: #e8f5f1;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+
 .main {
   flex: 1;
   padding: 1.25rem;
@@ -79,6 +97,16 @@ h2 {
 
 .muted {
   color: #5a6a68;
+}
+
+.page-footer {
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+.page-footer p {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
 }
 .small {
   font-size: 0.9rem;
@@ -222,6 +250,11 @@ h2 {
   padding: 0.15rem 0.5rem;
   border-radius: 999px;
   font-weight: 600;
+}
+
+.pill-extra {
+  background: #ede7f6;
+  color: #4a148c;
 }
 
 .error {

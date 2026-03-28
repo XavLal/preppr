@@ -41,6 +41,19 @@ export type PutStateResult =
   | { ok: true; state: AppState }
   | { ok: false; conflict: AppState; message: string };
 
+function conflictStateFromResponse(data: unknown): AppState {
+  if (
+    data &&
+    typeof data === "object" &&
+    "state" in data &&
+    (data as { state: unknown }).state &&
+    typeof (data as { state: unknown }).state === "object"
+  ) {
+    return (data as { state: AppState }).state;
+  }
+  return data as AppState;
+}
+
 export async function apiPutState(
   expectedVersion: number,
   state: AppState
@@ -49,11 +62,11 @@ export async function apiPutState(
     method: "PUT",
     body: JSON.stringify({ expectedVersion, state }),
   });
-  const data = (await res.json()) as AppState & { error?: string };
+  const data = (await res.json()) as AppState & { error?: string; state?: AppState };
   if (res.status === 409) {
     return {
       ok: false,
-      conflict: data as AppState,
+      conflict: conflictStateFromResponse(data),
       message: data.error ?? "Conflit de version",
     };
   }
@@ -71,4 +84,46 @@ export async function apiImportJson(jsonText: string): Promise<AppState> {
   const data = (await res.json()) as AppState & { error?: string };
   if (!res.ok) throw new Error(data.error ?? "Import impossible");
   return data as AppState;
+}
+
+export async function apiClearRecipes(
+  expectedVersion: number
+): Promise<PutStateResult> {
+  const res = await apiFetch("/api/clear-recipes", {
+    method: "POST",
+    body: JSON.stringify({ expectedVersion }),
+  });
+  const data = (await res.json()) as AppState & { error?: string; state?: AppState };
+  if (res.status === 409) {
+    return {
+      ok: false,
+      conflict: conflictStateFromResponse(data),
+      message: data.error ?? "Conflit de version",
+    };
+  }
+  if (!res.ok) {
+    throw new Error(data.error ?? "Suppression impossible");
+  }
+  return { ok: true, state: data as AppState };
+}
+
+export async function apiClearShopping(
+  expectedVersion: number
+): Promise<PutStateResult> {
+  const res = await apiFetch("/api/clear-shopping", {
+    method: "POST",
+    body: JSON.stringify({ expectedVersion }),
+  });
+  const data = (await res.json()) as AppState & { error?: string; state?: AppState };
+  if (res.status === 409) {
+    return {
+      ok: false,
+      conflict: conflictStateFromResponse(data),
+      message: data.error ?? "Conflit de version",
+    };
+  }
+  if (!res.ok) {
+    throw new Error(data.error ?? "Impossible de vider la liste");
+  }
+  return { ok: true, state: data as AppState };
 }

@@ -8,6 +8,7 @@ export const SHOP_AISLES = [
   "Boulangerie",
   "Surgelés",
   "Boissons",
+  "Hygiène & Beauté",
   "Divers",
 ] as const;
 

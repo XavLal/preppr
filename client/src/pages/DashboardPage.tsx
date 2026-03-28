@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useAppStore } from "@/store/useAppStore";
 
 export default function DashboardPage() {
@@ -7,11 +8,16 @@ export default function DashboardPage() {
   const state = useAppStore((s) => s.state);
   const loading = useAppStore((s) => s.loading);
   const error = useAppStore((s) => s.error);
+  const pendingSync = useAppStore((s) => s.pendingSync);
   const importJson = useAppStore((s) => s.importJson);
   const commit = useAppStore((s) => s.commit);
+  const clearAllRecipes = useAppStore((s) => s.clearAllRecipes);
+  const online = useOnlineStatus();
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [importBusy, setImportBusy] = useState(false);
+  const [clearRecipesOpen, setClearRecipesOpen] = useState(false);
+  const [clearRecipesBusy, setClearRecipesBusy] = useState(false);
 
   useEffect(() => {
     void hydrate();
@@ -45,6 +51,17 @@ export default function DashboardPage() {
       const r = d.recipes.find((x) => x.recipeInstanceId === id);
       if (r && r.alreadyCooked) r.removedFromPlan = true;
     });
+  }
+
+  const recipeCount = state?.recipes.length ?? 0;
+  const canBulkClearRecipes =
+    online && !pendingSync && recipeCount > 0;
+
+  async function confirmClearAllRecipes() {
+    setClearRecipesBusy(true);
+    const ok = await clearAllRecipes();
+    setClearRecipesBusy(false);
+    if (ok) setClearRecipesOpen(false);
   }
 
   if (loading && !state) {
@@ -112,6 +129,68 @@ export default function DashboardPage() {
           </li>
         ))}
       </ul>
+
+      <footer className="page-footer">
+        <p className="muted small">
+          Retire toutes les recettes du plan. La liste de courses est recalculée ; les lignes ajoutées
+          manuellement y restent.
+        </p>
+        <button
+          type="button"
+          className="btn danger ghost"
+          disabled={!canBulkClearRecipes}
+          title={
+            !online
+              ? "Connexion requise"
+              : pendingSync
+                ? "Synchronisation en attente"
+                : recipeCount === 0
+                  ? "Aucune recette"
+                  : undefined
+          }
+          onClick={() => setClearRecipesOpen(true)}
+        >
+          Supprimer toutes les recettes
+        </button>
+      </footer>
+
+      {clearRecipesOpen ? (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="clear-recipes-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !clearRecipesBusy) setClearRecipesOpen(false);
+          }}
+        >
+          <div className="card modal" onClick={(e) => e.stopPropagation()}>
+            <h2 id="clear-recipes-title">Supprimer toutes les recettes ?</h2>
+            <p className="muted">
+              Toutes les recettes seront retirées du plan. La liste de courses sera mise à jour ;
+              les ingrédients saisis manuellement dans la liste seront conservés.
+            </p>
+            <div className="row end">
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={clearRecipesBusy}
+                onClick={() => setClearRecipesOpen(false)}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="btn danger"
+                disabled={clearRecipesBusy}
+                onClick={() => void confirmClearAllRecipes()}
+              >
+                {clearRecipesBusy ? "Suppression…" : "Tout supprimer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {importOpen ? (
         <div className="modal-backdrop" role="dialog" aria-modal="true">

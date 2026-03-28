@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useAppStore } from "@/store/useAppStore";
 import {
   aisleForSelect,
@@ -11,7 +12,11 @@ import type { ShoppingLine } from "@/types";
 export default function ShoppingPage() {
   const hydrate = useAppStore((s) => s.hydrate);
   const state = useAppStore((s) => s.state);
+  const error = useAppStore((s) => s.error);
+  const pendingSync = useAppStore((s) => s.pendingSync);
   const commit = useAppStore((s) => s.commit);
+  const clearAllShopping = useAppStore((s) => s.clearAllShopping);
+  const online = useOnlineStatus();
 
   useEffect(() => {
     if (!state) void hydrate();
@@ -24,6 +29,8 @@ export default function ShoppingPage() {
   const [qty, setQty] = useState("1");
   const [unit, setUnit] = useState("pièce");
   const [formBusy, setFormBusy] = useState(false);
+  const [clearShoppingOpen, setClearShoppingOpen] = useState(false);
+  const [clearShoppingBusy, setClearShoppingBusy] = useState(false);
 
   const grouped = useMemo(() => {
     const lines = state?.shoppingLines ?? [];
@@ -113,6 +120,16 @@ export default function ShoppingPage() {
 
   const isEdit = editingLineId !== null;
 
+  const lineCount = state?.shoppingLines.length ?? 0;
+  const canBulkClearShopping = online && !pendingSync && lineCount > 0;
+
+  async function confirmClearAllShopping() {
+    setClearShoppingBusy(true);
+    const ok = await clearAllShopping();
+    setClearShoppingBusy(false);
+    if (ok) setClearShoppingOpen(false);
+  }
+
   if (!state) {
     return <p className="muted">Chargement…</p>;
   }
@@ -120,6 +137,12 @@ export default function ShoppingPage() {
   return (
     <div>
       <h1>Liste de courses</h1>
+
+      {error ? (
+        <p className="error banner" role="alert">
+          {error}
+        </p>
+      ) : null}
 
       <div className="toolbar shop-toolbar">
         <button type="button" className="btn primary" onClick={openAddModal}>
@@ -230,7 +253,11 @@ export default function ShoppingPage() {
                       </strong>
                     </span>
                     <span className="shop-line-name">{l.name}</span>
-                    {l.manual ? <span className="pill">Manuel</span> : null}
+                    {l.extraIngredient ? (
+                      <span className="pill pill-extra">Hors recette</span>
+                    ) : l.manual ? (
+                      <span className="pill">Manuel</span>
+                    ) : null}
                   </button>
                 </div>
                 <button
@@ -247,6 +274,68 @@ export default function ShoppingPage() {
           </ul>
         </section>
       ))}
+
+      <footer className="page-footer">
+        <p className="muted small">
+          Vide la liste puis la régénère à partir des recettes encore au plan (y compris coches et
+          lignes manuelles).
+        </p>
+        <button
+          type="button"
+          className="btn danger ghost"
+          disabled={!canBulkClearShopping}
+          title={
+            !online
+              ? "Connexion requise"
+              : pendingSync
+                ? "Synchronisation en attente"
+                : lineCount === 0
+                  ? "Liste déjà vide"
+                  : undefined
+          }
+          onClick={() => setClearShoppingOpen(true)}
+        >
+          Vider toute la liste
+        </button>
+      </footer>
+
+      {clearShoppingOpen ? (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="clear-shopping-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !clearShoppingBusy) setClearShoppingOpen(false);
+          }}
+        >
+          <div className="card modal" onClick={(e) => e.stopPropagation()}>
+            <h2 id="clear-shopping-title">Vider toute la liste ?</h2>
+            <p className="muted">
+              Toutes les lignes (manuelles, hors recette, coches ou non) seront effacées, puis la
+              liste sera recalculée à partir des recettes actuellement au plan.
+            </p>
+            <div className="row end">
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={clearShoppingBusy}
+                onClick={() => setClearShoppingOpen(false)}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="btn danger"
+                disabled={clearShoppingBusy}
+                onClick={() => void confirmClearAllShopping()}
+              >
+                {clearShoppingBusy ? "Vidage…" : "Tout vider"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

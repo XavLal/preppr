@@ -29,6 +29,8 @@ export type ShoppingLine = {
   aisle: string;
   checked: boolean;
   manual: boolean;
+  /** Ligne issue de `extraIngredients` dans le JSON d’import */
+  extraIngredient?: boolean;
 };
 
 export type AppState = {

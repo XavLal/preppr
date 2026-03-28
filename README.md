@@ -2,6 +2,8 @@
 
 Application familiale : import de recettes au format JSON (généré par l’IA), planification, liste de courses par rayon, synchronisation via API (polling), comptes par famille (login / mot de passe).
 
+Le JSON d’import contient `weekId`, un tableau `recipes` (comme décrit par l’IA) et optionnellement **`extraIngredients`** : liste d’objets `{ name, quantity, unit, aisle }` pour des articles **hors recettes** (ex. papier toilette). Ces lignes sont ajoutées à la liste de courses avec le repère « Hors recette ».
+
 ## Prérequis
 
 - Node.js 22+
@@ -68,7 +70,14 @@ docker compose up --build
 
 Données dans le volume `mealplanner-data` monté sur `/data`.
 
-## Prochaines étapes (hors périmètre actuel)
+## Hors ligne & PWA
 
-- PWA / cache Service Worker et file d’attente IndexedDB pour la liste de courses hors ligne
+- **IndexedDB** : dernière copie de l’état par famille (clé = `sub` du JWT) ; en cas d’échec du chargement, affichage du cache.
+- **Liste de courses** : en l’absence de réseau (ou si l’API échoue), les changements sont enregistrés localement puis **synchronisés** au retour en ligne (fusion : courses + portions cibles si le serveur a une version plus récente).
+- **PWA** : `npm run build` génère un **service worker** (précache des assets). En production, servir le build avec le serveur Node (`CLIENT_DIST`) pour une seule origine.
+- Développement : `vite-plugin-pwa` a `devOptions.enabled: false` ; tester le SW via `npm run build && npm run preview -w client`.
+
+## Prochaines étapes possibles
+
 - Déduplication à l’import, outil « nouvelle semaine »
+- File d’attente détaillée par opération (au-delà du snapshot + fusion actuelle)

@@ -16,7 +16,8 @@ export function usePollState(enabled: boolean): void {
       busy.current = true;
       try {
         const remote = await apiGetState();
-        const local = useAppStore.getState().state;
+        const { state: local, pendingSync } = useAppStore.getState();
+        if (pendingSync) return;
         if (!local || remote.version !== local.version) {
           useAppStore.getState().setStateFromServer(remote);
         }
