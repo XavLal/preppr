@@ -1,0 +1,38 @@
+# Meal planner — règles pour l’agent
+## Contexte produit
+- App familiale : import JSON (IA), recettes avec `recipeInstanceId` interne, liste de courses par rayon, sync multi-utilisateurs, **liste de courses utilisable hors ligne** (cache + file de mutations).
+- Garde-fous UX : suppression recette **après** « déjà fait » ; retrait d’une ligne de courses **après** cochage ; valider côté serveur aussi.
+- UI en **français** ; textes utilisateur clairs et cohérents.
+## Stack cible (ne pas dévier sans raison)
+- **Frontend** : React 18+, **Vite**, **TypeScript** strict, **React Router**, validation avec **Zod** (schémas partagés ou dupliqués proprement client/serveur).
+- **Backend** : Node **Fastify** ou Express, persistance **fichier JSON** + snapshots historique, API versionnée (`version` / `updatedAt`).
+- **Offline** : **IndexedDB** pour cache + file ; **Service Worker** / PWA (Vite PWA plugin) pour le shell ; polling + flush au `online`.
+## React — pratiques obligatoires
+- Composants **fonctionnels** uniquement ; pas de classes.
+- Un fichier = un composant principal exporté ; nom du fichier en **PascalCase** pour les composants (`RecipeCard.tsx`).
+- **Props typées** avec des types/interfaces TS explicites ; éviter `any` ; utiliser `unknown` + narrowing si nécessaire.
+- **État local** quand c’est local au composant ; **état serveur / sync** (Zustand, React Query, ou Context + reducer documenté) pour données partagées — ne pas prop-driller profondément.
+- **Effets** : `useEffect` avec dépendances correctes ; pas d’effets pour dériver de l’état — préférer calcul au rendu ou `useMemo` quand pertinent.
+- **Hooks personnalisés** : extraire logique réutilisable (`useOnlineStatus`, `usePollState`, `useShoppingQueue`) ; préfixe `use`.
+- **Listes** : clés stables (`recipeInstanceId`, id de ligne de course), **pas** l’index sauf listes statiques sans réordonnancement.
+- **Formulaires / import JSON** : contrôler les erreurs Zod ; messages d’erreur utilisateur compréhensibles.
+- **Accessibilité** : labels sur champs, boutons avec texte ou `aria-label`, focus visible, contrastes raisonnables.
+- **Performance** : éviter re-renders inutiles (mémoïser seulement si mesuré ou listes lourdes) ; pas de premature optimization.
+## TypeScript
+- `strict: true` ; préférer types inférés pour les literals Zod (`z.infer<typeof Schema>`).
+- Distinguer **types du JSON importé** vs **types du modèle applicatif** (avec `recipeInstanceId`, `sourceRecipeId`, etc.).
+## API & données
+- Appels API centralisés dans un **module client** (fonctions typées, gestion erreurs réseau).
+- Mutations : inclure **version** attendue quand le serveur l’exige ; gérer **409** / conflit pour rebaser après offline.
+- Ne jamais persister de secrets dans le dépôt ; variables d’environnement pour config.
+## Style de code & PR
+- Modifier **le minimum** de fichiers pour la tâche ; pas de refactor gratuit ni fichiers hors scope.
+- Nommer en **anglais** dans le code (composants, variables) ; **chaînes UI** en français.
+- Imports cohérents (alias `@/` si configuré dans Vite).
+- Pas de commentaires évidents ; commenter seulement invariants métier non triviaux (ex. règles de fusion ingrédients).
+## Tests (quand on en ajoute)
+- Tests ciblés pour **Zod**, **calcul de portions / agrégation courses**, et **garde-fous** suppression (logique pure en modules testables).
+## Déploiement
+- Prévoir **Docker** + volume pour `data/` ; même origine pour API + assets quand possible (TrueNAS / SCALE).
+## Auth
+- JWT Bearer ; **tenantSlug** dérivé du login ; données sous `DATA_DIR/tenants/{slug}/` ; `accounts.json` hors statique.
