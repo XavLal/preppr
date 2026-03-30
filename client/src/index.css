@@ -179,8 +179,9 @@ a:hover {
 .main {
   flex: 1;
   padding: 1rem;
-  max-width: none;
+  max-width: 850px;
   width: 100%;
+  margin: 0 auto;
 }
 
 h1 {
@@ -269,6 +270,7 @@ h2 {
   border: 1px solid var(--border);
   background: var(--card);
 }
+
 .field textarea {
   width: 100%;
   max-width: 100%;
