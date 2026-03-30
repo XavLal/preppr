@@ -1,36 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DEFAULT_CULINARY_STYLE_CONTEXT,
   DEFAULT_EQUIPMENT_CONTEXT,
   DEFAULT_FAMILY_CONTEXT,
   DEFAULT_TASTES_CONTEXT,
 } from "@/config/prompts.js";
-import { getTenantCacheKey } from "@/lib/tenantCacheKey";
-
-function tenantKeyOrDefault() {
-  return getTenantCacheKey() ?? "default";
-}
-
-function storageKeyFor(familyKey, field) {
-  return `preppr_${familyKey}_${field}`;
-}
+import { normalizeAisleOrder } from "@/lib/shopAisles";
+import { useAppStore } from "@/store/useAppStore";
 
 export default function Settings() {
-  const familyKey = useMemo(() => tenantKeyOrDefault(), []);
-
-  const apiKeyStorageKey = useMemo(
-    () => storageKeyFor(familyKey, "gemini_api_key"),
-    [familyKey]
-  );
-  const contextStorageKey = useMemo(
-    () => storageKeyFor(familyKey, "custom_user_context"),
-    [familyKey]
-  );
+  const hydrate = useAppStore((s) => s.hydrate);
+  const state = useAppStore((s) => s.state);
+  const commit = useAppStore((s) => s.commit);
 
   const [apiKey, setApiKey] = useState("");
   const [savedMessage, setSavedMessage] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
+  const [formHydrated, setFormHydrated] = useState(false);
 
   const [familyContext, setFamilyContext] = useState(DEFAULT_FAMILY_CONTEXT);
   const [tastesContext, setTastesContext] = useState(DEFAULT_TASTES_CONTEXT);
@@ -39,106 +25,112 @@ export default function Settings() {
   );
   const [equipmentContext, setEquipmentContext] = useState(DEFAULT_EQUIPMENT_CONTEXT);
 
-  function buildCustomUserContextPayload() {
-    return {
-      familyContext,
-      tastesContext,
-      culinaryStyleContext,
-      equipmentContext,
-    };
-  }
-
-  function applyLegacyStringToFields(legacyValue) {
-    // Compat ascendante (ancienne UI = textarea "famille+goûts").
-    setFamilyContext(legacyValue);
-    setTastesContext("");
-    setCulinaryStyleContext(DEFAULT_CULINARY_STYLE_CONTEXT);
-    setEquipmentContext(DEFAULT_EQUIPMENT_CONTEXT);
-  }
-
-  // Pré-remplissage au premier chargement.
-  useEffect(() => {
-    const storedKey = localStorage.getItem(apiKeyStorageKey);
-    setApiKey(storedKey ?? "");
-
-    const storedContext = localStorage.getItem(contextStorageKey);
-    if (!storedContext) {
-      // Valeurs par défaut.
-      setFamilyContext(DEFAULT_FAMILY_CONTEXT);
-      setTastesContext(DEFAULT_TASTES_CONTEXT);
-      setCulinaryStyleContext(DEFAULT_CULINARY_STYLE_CONTEXT);
-      setEquipmentContext(DEFAULT_EQUIPMENT_CONTEXT);
-    } else {
-      try {
-        const parsed = JSON.parse(storedContext);
-        if (
-          parsed &&
-          typeof parsed === "object" &&
-          !Array.isArray(parsed) &&
-          Object.prototype.hasOwnProperty.call(parsed, "familyContext")
-        ) {
-          const obj = parsed;
-          setFamilyContext(
-            typeof obj.familyContext === "string" ? obj.familyContext : DEFAULT_FAMILY_CONTEXT
-          );
-          setTastesContext(
-            typeof obj.tastesContext === "string" ? obj.tastesContext : DEFAULT_TASTES_CONTEXT
-          );
-          setCulinaryStyleContext(
-            typeof obj.culinaryStyleContext === "string"
-              ? obj.culinaryStyleContext
-              : DEFAULT_CULINARY_STYLE_CONTEXT
-          );
-          setEquipmentContext(
-            typeof obj.equipmentContext === "string"
-              ? obj.equipmentContext
-              : DEFAULT_EQUIPMENT_CONTEXT
-          );
-        } else {
-          // Si c'est une string legacy.
-          applyLegacyStringToFields(String(storedContext));
-        }
-      } catch {
-        applyLegacyStringToFields(String(storedContext));
-      }
-    }
-
-    setHydrated(true);
-  }, [apiKeyStorageKey, contextStorageKey]);
+  const lastPushedVersionRef = useRef(null);
 
   useEffect(() => {
-    if (!hydrated) return;
-    // Auto-save (debounce) pour éviter un spam de notifications.
+    if (!state) void hydrate();
+  }, [hydrate, state]);
+
+  useEffect(() => {
+    if (!state) return;
+    if (lastPushedVersionRef.current === state.version) return;
+    lastPushedVersionRef.current = state.version;
+    setApiKey(state.geminiApiKey);
+    setFamilyContext(state.familyContext);
+    setTastesContext(state.tastesContext);
+    setCulinaryStyleContext(state.culinaryStyleContext);
+    setEquipmentContext(state.equipmentContext);
+    setFormHydrated(true);
+  }, [state?.version, state]);
+
+  useEffect(() => {
+    if (!formHydrated || !state) return;
+    const matches =
+      apiKey === state.geminiApiKey &&
+      familyContext === state.familyContext &&
+      tastesContext === state.tastesContext &&
+      culinaryStyleContext === state.culinaryStyleContext &&
+      equipmentContext === state.equipmentContext;
+    if (matches) return;
+
     setBusy(true);
     const t = window.setTimeout(() => {
-      localStorage.setItem(apiKeyStorageKey, apiKey);
-      localStorage.setItem(
-        contextStorageKey,
-        JSON.stringify(buildCustomUserContextPayload())
-      );
-      setBusy(false);
-      setSavedMessage("Préférences enregistrées");
-      window.setTimeout(() => setSavedMessage(null), 2500);
+      void (async () => {
+        const ok = await commit((d) => {
+          d.geminiApiKey = apiKey;
+          d.familyContext = familyContext;
+          d.tastesContext = tastesContext;
+          d.culinaryStyleContext = culinaryStyleContext;
+          d.equipmentContext = equipmentContext;
+        });
+        setBusy(false);
+        if (ok) {
+          setSavedMessage("Préférences enregistrées");
+          window.setTimeout(() => setSavedMessage(null), 2500);
+        }
+      })();
     }, 600);
-    return () => window.clearTimeout(t);
+    return () => {
+      window.clearTimeout(t);
+      setBusy(false);
+    };
   }, [
-    hydrated,
+    formHydrated,
     apiKey,
     familyContext,
     tastesContext,
     culinaryStyleContext,
     equipmentContext,
-    apiKeyStorageKey,
-    contextStorageKey,
+    state,
+    commit,
   ]);
 
-  function resetToDefaults() {
+  function showSavedToastIfOk(wasOk) {
+    if (wasOk) {
+      setSavedMessage("Préférences enregistrées");
+      window.setTimeout(() => setSavedMessage(null), 2500);
+    }
+  }
+
+  async function moveAisle(index, direction) {
+    const ok = await commit((d) => {
+      const cur = normalizeAisleOrder(d.shopAisleOrder);
+      const j = index + direction;
+      if (j < 0 || j >= cur.length) return;
+      const next = [...cur];
+      const tmp = next[index];
+      next[index] = next[j];
+      next[j] = tmp;
+      d.shopAisleOrder = next;
+    });
+    showSavedToastIfOk(ok);
+  }
+
+  async function resetAisleOrderDefault() {
+    const ok = await commit((d) => {
+      d.shopAisleOrder = normalizeAisleOrder([]);
+    });
+    showSavedToastIfOk(ok);
+  }
+
+  async function resetPromptsToDefaults() {
     setApiKey("");
     setFamilyContext(DEFAULT_FAMILY_CONTEXT);
     setTastesContext(DEFAULT_TASTES_CONTEXT);
     setCulinaryStyleContext(DEFAULT_CULINARY_STYLE_CONTEXT);
     setEquipmentContext(DEFAULT_EQUIPMENT_CONTEXT);
+    const ok = await commit((d) => {
+      d.geminiApiKey = "";
+      d.familyContext = DEFAULT_FAMILY_CONTEXT;
+      d.tastesContext = DEFAULT_TASTES_CONTEXT;
+      d.culinaryStyleContext = DEFAULT_CULINARY_STYLE_CONTEXT;
+      d.equipmentContext = DEFAULT_EQUIPMENT_CONTEXT;
+    });
+    showSavedToastIfOk(ok);
   }
+
+  const aisleOrder = state ? normalizeAisleOrder(state.shopAisleOrder) : [];
+  const aisleControlsDisabled = !state || busy;
 
   return (
     <div className="settings">
@@ -148,6 +140,7 @@ export default function Settings() {
         <h2>Clé API Gemini</h2>
         <p className="muted small">
           Pour activer le Générateur de Menus, crée une clé API dans Google AI Studio. Le forfait gratuit est suffisant.
+          La clé est enregistrée avec vos données familiales sur le serveur (comme les recettes).
         </p>
         <ol className="muted small" style={{ paddingLeft: "1.25rem" }}>
           <li>Va sur Google AI Studio, menu "Get API key" : <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer">ICI</a></li>
@@ -168,9 +161,67 @@ export default function Settings() {
       </section>
 
       <section className="card" style={{ marginTop: "1rem" }}>
+        <h2>Ordre des rayons</h2>
+        <p className="muted small">
+          Ordre d’affichage des rayons sur la page Liste de courses (parcours de votre magasin).
+          Synchronisé avec votre famille comme les recettes et la liste de courses.
+        </p>
+        {!state ? <p className="muted small">Chargement des données…</p> : null}
+        {state ? (
+          <>
+            <ul
+              className="settings-aisle-order"
+              style={{ listStyle: "none", padding: 0, margin: "0.75rem 0 0", display: "grid", gap: "0.4rem" }}
+            >
+              {aisleOrder.map((label, i) => (
+                <li
+                  key={label}
+                  className="row"
+                  style={{ alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}
+                >
+                  <span style={{ flex: "1 1 12rem" }}>{label}</span>
+                  <div className="row" style={{ gap: "0.35rem" }}>
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      disabled={aisleControlsDisabled || i === 0}
+                      onClick={() => void moveAisle(i, -1)}
+                      aria-label={`Monter ${label}`}
+                    >
+                      Monter
+                    </button>
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      disabled={aisleControlsDisabled || i === aisleOrder.length - 1}
+                      onClick={() => void moveAisle(i, 1)}
+                      aria-label={`Descendre ${label}`}
+                    >
+                      Descendre
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="row" style={{ marginTop: "0.75rem" }}>
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={aisleControlsDisabled}
+                onClick={() => void resetAisleOrderDefault()}
+              >
+                Réinitialiser l’ordre des rayons
+              </button>
+            </div>
+          </>
+        ) : null}
+      </section>
+
+      <section className="card" style={{ marginTop: "1rem" }}>
         <h2>Contexte utilisateur</h2>
         <p className="muted small">
           Ces champs constituent votre <strong>contexte utilisateur</strong> envoyé au générateur de menus.
+          Ils sont synchronisés pour toute la famille (même compte).
         </p>
 
         <div style={{ display: "grid", gap: "1rem", marginTop: "0.5rem" }}>
@@ -271,8 +322,8 @@ export default function Settings() {
             type="button"
             className="btn ghost"
             disabled={busy}
-            onClick={resetToDefaults}
-            title="Remet les préférences par défaut"
+            onClick={() => void resetPromptsToDefaults()}
+            title="Remet la clé API (vide) et le contexte utilisateur par défaut"
           >
             Réinitialiser les préférences par défaut
           </button>
@@ -296,4 +347,3 @@ export default function Settings() {
     </div>
   );
 }
-

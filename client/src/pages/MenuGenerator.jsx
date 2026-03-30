@@ -6,7 +6,6 @@ import {
   DEFAULT_EQUIPMENT_CONTEXT,
   DEFAULT_FAMILY_CONTEXT,
   DEFAULT_TASTES_CONTEXT,
-  DEFAULT_USER_CONTEXT,
   FIXED_JSON_RULES,
 } from "@/config/prompts.js";
 import { getTenantCacheKey } from "@/lib/tenantCacheKey";
@@ -124,21 +123,13 @@ function fileToGenerativePart(file) {
 export default function MenuGenerator() {
   const familyKey = useMemo(() => tenantKeyOrDefault(), []);
 
-  const apiKeyStorageKey = useMemo(
-    () => storageKeyFor(familyKey, "gemini_api_key"),
-    [familyKey]
-  );
-  const contextStorageKey = useMemo(
-    () => storageKeyFor(familyKey, "custom_user_context"),
-    [familyKey]
-  );
   const chatStorageKey = useMemo(
     () => storageKeyFor(familyKey, "menu_generator_chat"),
     [familyKey]
   );
 
-  const [apiKey, setApiKey] = useState("");
-  const [customUserContext, setCustomUserContext] = useState(DEFAULT_USER_CONTEXT);
+  const hydrate = useAppStore((s) => s.hydrate);
+  const state = useAppStore((s) => s.state);
 
   const [messages, setMessages] = useState(defaultConversation);
   const [draft, setDraft] = useState("");
@@ -154,27 +145,25 @@ export default function MenuGenerator() {
   const textareaRef = useRef(null);
 
   useEffect(() => {
-    const storedKey = localStorage.getItem(apiKeyStorageKey);
-    setApiKey(storedKey ?? "");
+    if (!state) void hydrate();
+  }, [hydrate, state]);
 
-    const storedContext = localStorage.getItem(contextStorageKey);
-    if (!storedContext) {
-      setCustomUserContext(DEFAULT_USER_CONTEXT);
-      return;
-    }
+  const apiKey = state?.geminiApiKey ?? "";
 
-    // Nouveaux paramètres (JSON) ; compat avec l'ancien stockage string.
-    try {
-      const parsed = JSON.parse(storedContext);
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        setCustomUserContext(buildCustomUserContextText(parsed));
-      } else {
-        setCustomUserContext(String(storedContext));
-      }
-    } catch {
-      setCustomUserContext(String(storedContext));
-    }
-  }, [apiKeyStorageKey, contextStorageKey]);
+  const customUserContext = useMemo(() => {
+    return buildCustomUserContextText({
+      roleContext: DEFAULT_ROLE_CONTEXT,
+      familyContext: state?.familyContext,
+      tastesContext: state?.tastesContext,
+      culinaryStyleContext: state?.culinaryStyleContext,
+      equipmentContext: state?.equipmentContext,
+    });
+  }, [
+    state?.familyContext,
+    state?.tastesContext,
+    state?.culinaryStyleContext,
+    state?.equipmentContext,
+  ]);
 
   useEffect(() => {
     const raw = localStorage.getItem(chatStorageKey);

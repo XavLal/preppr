@@ -12,6 +12,7 @@ import {
   isAllowlistedRecipeUrl,
   probeRecipeUrlHttpStatus,
 } from "./lib/recipeUrlCheck.js";
+import { coerceAppState } from "./lib/coerceAppState.js";
 import { loadAccounts, loadState, saveState } from "./lib/storage.js";
 import { mergeImportedRecipesIntoShoppingLines } from "./lib/shopping.js";
 import {
@@ -114,8 +115,9 @@ app.put("/api/state", async (req, reply) => {
       state: prev,
     });
   }
+  const coerced = coerceAppState(body.state);
   const nextRaw: AppState = {
-    ...body.state,
+    ...coerced,
     version: body.expectedVersion + 1,
     updatedAt: new Date().toISOString(),
   };

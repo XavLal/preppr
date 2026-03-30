@@ -40,4 +40,12 @@ export type AppState = {
   shoppingLines: ShoppingLine[];
   /** target portions per recipeInstanceId; default = basePortions from recipe */
   targetPortions: Record<string, number>;
+  /** Ordre d’affichage des rayons (liste de courses), partagé pour le tenant */
+  shopAisleOrder: string[];
+  /** Clé API Gemini (partagée pour le tenant — fichier JSON sur le serveur) */
+  geminiApiKey: string;
+  familyContext: string;
+  tastesContext: string;
+  culinaryStyleContext: string;
+  equipmentContext: string;
 };

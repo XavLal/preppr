@@ -39,4 +39,11 @@ export type AppState = {
   recipes: StoredRecipe[];
   shoppingLines: ShoppingLine[];
   targetPortions: Record<string, number>;
+  /** Ordre des rayons (liste de courses), synchronisé avec le serveur pour la famille */
+  shopAisleOrder: string[];
+  geminiApiKey: string;
+  familyContext: string;
+  tastesContext: string;
+  culinaryStyleContext: string;
+  equipmentContext: string;
 };

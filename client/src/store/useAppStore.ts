@@ -6,7 +6,12 @@ import {
   apiImportJson,
   apiPutState,
 } from "@/api/client";
+import {
+  markLegacyPromptImportDone,
+  mergeLegacyLocalStoragePrompts,
+} from "@/lib/legacyLocalPromptSettings";
 import { mergeServerWithLocalDraft } from "@/lib/mergeOfflineState";
+import { normalizeAppState } from "@/lib/normalizeAppState";
 import { loadAppCache, saveAppCache } from "@/lib/offlineDb";
 import { getTenantCacheKey } from "@/lib/tenantCacheKey";
 import type { AppState } from "@/types";
@@ -50,7 +55,47 @@ export const useAppStore = create<AppStore>((set, get) => ({
   hydrate: async () => {
     set({ loading: true, error: null });
     try {
-      const s = await apiGetState();
+      let raw = await apiGetState();
+      const key = getTenantCacheKey();
+      let needPersistMigrate = false;
+      if (key) {
+        const r = mergeLegacyLocalStoragePrompts(key, raw);
+        raw = r.state;
+        needPersistMigrate = r.migrated;
+      }
+      let s = normalizeAppState(raw);
+
+      if (needPersistMigrate && key) {
+        const online = typeof navigator !== "undefined" && navigator.onLine;
+        if (online) {
+          try {
+            const res = await apiPutState(s.version, s);
+            if (res.ok) {
+              s = normalizeAppState(res.state);
+              markLegacyPromptImportDone(key);
+            }
+          } catch {
+            await persistCache(s, true);
+            set({
+              state: s,
+              loading: false,
+              pendingSync: true,
+              error: null,
+            });
+            return;
+          }
+        } else {
+          await persistCache(s, true);
+          set({
+            state: s,
+            loading: false,
+            pendingSync: true,
+            error: null,
+          });
+          return;
+        }
+      }
+
       set({ state: s, loading: false, pendingSync: false });
       void persistCache(s, false);
     } catch (e) {
@@ -60,7 +105,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           const row = await loadAppCache(key);
           if (row?.state) {
             set({
-              state: row.state,
+              state: normalizeAppState(row.state),
               loading: false,
               pendingSync: row.pendingSync,
               error: row.pendingSync
@@ -85,14 +130,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   setStateFromServer: (s) => {
     if (get().pendingSync) return;
-    set({ state: s, pendingSync: false });
-    void persistCache(s, false);
+    const next = normalizeAppState(s);
+    set({ state: next, pendingSync: false });
+    void persistCache(next, false);
   },
 
   importJson: async (text) => {
     set({ error: null });
     try {
-      const s = await apiImportJson(text);
+      const s = normalizeAppState(await apiImportJson(text));
       set({ state: s, pendingSync: false });
       void persistCache(s, false);
       return true;
@@ -109,34 +155,37 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (!cur) return false;
     const next = clone(cur);
     updater(next);
+    const normalized = normalizeAppState(next);
     const expectedVersion = cur.version;
     const online = typeof navigator !== "undefined" && navigator.onLine;
 
     if (!online) {
-      next.version = cur.version;
-      set({ state: next, pendingSync: true, error: null });
-      void persistCache(next, true);
+      normalized.version = cur.version;
+      set({ state: normalized, pendingSync: true, error: null });
+      void persistCache(normalized, true);
       return true;
     }
 
     try {
-      const res = await apiPutState(expectedVersion, next);
+      const res = await apiPutState(expectedVersion, normalized);
       if (res.ok) {
-        set({ state: res.state, pendingSync: false, error: null });
-        void persistCache(res.state, false);
+        const st = normalizeAppState(res.state);
+        set({ state: st, pendingSync: false, error: null });
+        void persistCache(st, false);
         return true;
       }
+      const conflict = normalizeAppState(res.conflict);
       set({
-        state: res.conflict,
+        state: conflict,
         error: res.message,
         pendingSync: false,
       });
-      void persistCache(res.conflict, false);
+      void persistCache(conflict, false);
       return false;
     } catch {
-      next.version = cur.version;
-      set({ state: next, pendingSync: true, error: null });
-      void persistCache(next, true);
+      normalized.version = cur.version;
+      set({ state: normalized, pendingSync: true, error: null });
+      void persistCache(normalized, true);
       return true;
     }
   },
@@ -157,16 +206,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
     try {
       const res = await apiClearRecipes(cur.version);
       if (res.ok) {
-        set({ state: res.state, pendingSync: false, error: null });
-        void persistCache(res.state, false);
+        const st = normalizeAppState(res.state);
+        set({ state: st, pendingSync: false, error: null });
+        void persistCache(st, false);
         return true;
       }
+      const conflict = normalizeAppState(res.conflict);
       set({
-        state: res.conflict,
+        state: conflict,
         error: res.message,
         pendingSync: false,
       });
-      void persistCache(res.conflict, false);
+      void persistCache(conflict, false);
       return false;
     } catch (e) {
       set({
@@ -193,16 +244,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
     try {
       const res = await apiClearShopping(cur.version);
       if (res.ok) {
-        set({ state: res.state, pendingSync: false, error: null });
-        void persistCache(res.state, false);
+        const st = normalizeAppState(res.state);
+        set({ state: st, pendingSync: false, error: null });
+        void persistCache(st, false);
         return true;
       }
+      const conflict = normalizeAppState(res.conflict);
       set({
-        state: res.conflict,
+        state: conflict,
         error: res.message,
         pendingSync: false,
       });
-      void persistCache(res.conflict, false);
+      void persistCache(conflict, false);
       return false;
     } catch (e) {
       set({
@@ -218,20 +271,22 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (!pendingSync || !state) return;
     if (typeof navigator !== "undefined" && !navigator.onLine) return;
     try {
-      let server = await apiGetState();
+      let server = normalizeAppState(await apiGetState());
       let merged = mergeServerWithLocalDraft(server, state);
       let res = await apiPutState(server.version, merged);
       if (res.ok) {
-        set({ state: res.state, pendingSync: false, error: null });
-        void persistCache(res.state, false);
+        const st = normalizeAppState(res.state);
+        set({ state: st, pendingSync: false, error: null });
+        void persistCache(st, false);
         return;
       }
-      server = res.conflict;
+      server = normalizeAppState(res.conflict);
       merged = mergeServerWithLocalDraft(server, state);
       res = await apiPutState(server.version, merged);
       if (res.ok) {
-        set({ state: res.state, pendingSync: false, error: null });
-        void persistCache(res.state, false);
+        const st = normalizeAppState(res.state);
+        set({ state: st, pendingSync: false, error: null });
+        void persistCache(st, false);
       }
     } catch {
       /* toujours hors ligne ou erreur */

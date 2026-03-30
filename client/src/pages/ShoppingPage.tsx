@@ -8,7 +8,9 @@ import {
 import { useAppStore } from "@/store/useAppStore";
 import {
   aisleForSelect,
+  aisleOrderToMap,
   compareAisles,
+  normalizeAisleOrder,
   SHOP_AISLES,
 } from "@/lib/shopAisles";
 import { SHOP_UNITS, unitForSelect } from "@/lib/shopUnits";
@@ -59,6 +61,13 @@ export default function ShoppingPage() {
     return () => window.removeEventListener("dragend", onAnyDragEnd);
   }, []);
 
+  const aisleOrderMap = useMemo(() => {
+    const order = state
+      ? normalizeAisleOrder(state.shopAisleOrder)
+      : normalizeAisleOrder(undefined);
+    return aisleOrderToMap(order);
+  }, [state?.shopAisleOrder, state]);
+
   const grouped = useMemo(() => {
     const lines = state?.shoppingLines ?? [];
     const m = new Map<string, typeof lines>();
@@ -67,8 +76,10 @@ export default function ShoppingPage() {
       arr.push(l);
       m.set(l.aisle, arr);
     }
-    return Array.from(m.entries()).sort(([a], [b]) => compareAisles(a, b));
-  }, [state?.shoppingLines]);
+    return Array.from(m.entries()).sort(([a], [b]) =>
+      compareAisles(a, b, aisleOrderMap)
+    );
+  }, [state?.shoppingLines, aisleOrderMap]);
 
   function resetForm() {
     setName("");

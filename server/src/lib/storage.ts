@@ -1,6 +1,14 @@
 import { mkdir, readFile, writeFile, readdir, unlink } from "fs/promises";
 import path from "path";
+import { coerceAppState } from "./coerceAppState.js";
+import { normalizeAisleOrder } from "./shopAisles.js";
 import type { AppState } from "./types.js";
+import {
+  DEFAULT_CULINARY_STYLE_CONTEXT,
+  DEFAULT_EQUIPMENT_CONTEXT,
+  DEFAULT_FAMILY_CONTEXT,
+  DEFAULT_TASTES_CONTEXT,
+} from "./userPromptDefaults.js";
 
 export type AccountUser = { login: string; passwordHash: string };
 export type AccountsFile = { users: AccountUser[] };
@@ -33,6 +41,12 @@ export function emptyState(): AppState {
     recipes: [],
     shoppingLines: [],
     targetPortions: {},
+    shopAisleOrder: normalizeAisleOrder([]),
+    geminiApiKey: "",
+    familyContext: DEFAULT_FAMILY_CONTEXT,
+    tastesContext: DEFAULT_TASTES_CONTEXT,
+    culinaryStyleContext: DEFAULT_CULINARY_STYLE_CONTEXT,
+    equipmentContext: DEFAULT_EQUIPMENT_CONTEXT,
   };
 }
 
@@ -56,7 +70,7 @@ export async function loadState(slug: string): Promise<AppState> {
     const raw = await readFile(statePath(slug), "utf-8");
     const s = JSON.parse(raw) as AppState;
     if (typeof s.version !== "number") return emptyState();
-    return s;
+    return coerceAppState(s);
   } catch {
     return emptyState();
   }
