@@ -147,12 +147,11 @@ export default function Settings() {
       <section className="card">
         <h2>Clé API Gemini</h2>
         <p className="muted small">
-          Pour activer le Générateur de Menus, crée une clé API dans Google AI Studio.
+          Pour activer le Générateur de Menus, crée une clé API dans Google AI Studio. Le forfait gratuit est suffisant.
         </p>
         <ol className="muted small" style={{ paddingLeft: "1.25rem" }}>
-          <li>Va sur Google AI Studio.</li>
-          <li>Crée/ouvre un projet.</li>
-          <li>Récupère la clé d’API (Gemini API key).</li>
+          <li>Va sur Google AI Studio, menu "Get API key" : <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer">ICI</a></li>
+          <li>Crée/copie la clé API.</li>
           <li>Colle-la ci-dessous.</li>
         </ol>
 
@@ -171,8 +170,7 @@ export default function Settings() {
       <section className="card" style={{ marginTop: "1rem" }}>
         <h2>Contexte utilisateur</h2>
         <p className="muted small">
-          Ces champs constituent le <strong>custom_user_context</strong> envoyé au générateur de menus.
-          Les règles strictes de sortie JSON restent fixes côté code.
+          Ces champs constituent votre <strong>contexte utilisateur</strong> envoyé au générateur de menus.
         </p>
 
         <div style={{ display: "grid", gap: "1rem", marginTop: "0.5rem" }}>

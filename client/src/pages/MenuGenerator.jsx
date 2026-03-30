@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  DEFAULT_ROLE_CONTEXT,
   DEFAULT_CULINARY_STYLE_CONTEXT,
   DEFAULT_EQUIPMENT_CONTEXT,
   DEFAULT_FAMILY_CONTEXT,
@@ -18,6 +19,7 @@ function storageKeyFor(familyKey, field) {
 }
 
 function buildCustomUserContextText(profile) {
+  const role = typeof profile?.roleContext === "string" ? profile.roleContext : DEFAULT_ROLE_CONTEXT;
   const family = typeof profile?.familyContext === "string" ? profile.familyContext : DEFAULT_FAMILY_CONTEXT;
   const tastes = typeof profile?.tastesContext === "string" ? profile.tastesContext : DEFAULT_TASTES_CONTEXT;
   const culinaryStyle =
@@ -30,6 +32,9 @@ function buildCustomUserContextText(profile) {
       : DEFAULT_EQUIPMENT_CONTEXT;
 
   return [
+    "Rôle :",
+    role.trim(),
+    "",
     "Famille (taille / contraintes) :",
     family.trim(),
     "",
@@ -125,7 +130,8 @@ export default function MenuGenerator() {
     setIsLoading(true);
 
     // Dans la vraie version, voici comment on construirait le prompt système final :
-    // const finalSystemPrompt = customUserContext + "\n\n" + FIXED_JSON_RULES;
+    const finalSystemPrompt = customUserContext + "\n\n" + FIXED_JSON_RULES;
+    console.log(finalSystemPrompt);
 
     window.setTimeout(() => {
       const fakeAssistant =
