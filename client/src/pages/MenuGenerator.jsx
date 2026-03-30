@@ -146,6 +146,7 @@ export default function MenuGenerator() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedFileName, setSelectedFileName] = useState(null);
   const [importStatus, setImportStatus] = useState(null);
+  const [chatHydrated, setChatHydrated] = useState(false);
 
   const importJson = useAppStore((s) => s.importJson);
   const appError = useAppStore((s) => s.error);
@@ -179,6 +180,7 @@ export default function MenuGenerator() {
     const raw = localStorage.getItem(chatStorageKey);
     if (!raw) {
       setMessages(defaultConversation());
+      setChatHydrated(true);
       return;
     }
     try {
@@ -192,11 +194,13 @@ export default function MenuGenerator() {
     } catch {
       setMessages(defaultConversation());
     }
+    setChatHydrated(true);
   }, [chatStorageKey]);
 
   useEffect(() => {
+    if (!chatHydrated) return;
     localStorage.setItem(chatStorageKey, JSON.stringify(messages));
-  }, [chatStorageKey, messages]);
+  }, [chatHydrated, chatStorageKey, messages]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -273,10 +277,10 @@ export default function MenuGenerator() {
       const answer =
         result.response.text()?.trim() ||
         "Je n'ai pas recu de reponse exploitable de Gemini.";
-      addMessage("model", answer);
 
       const jsonPayload = extractJsonPayload(answer);
       if (!jsonPayload) {
+        addMessage("model", answer);
         setImportStatus(
           "Réponse IA reçue, mais aucun JSON importable n'a été détecté."
         );
@@ -294,10 +298,18 @@ export default function MenuGenerator() {
 
       const imported = await importJson(jsonPayload);
       if (imported) {
+        addMessage(
+          "model",
+          "C'est fait. Les recettes ont été importées automatiquement et la liste de courses est prête."
+        );
         setImportStatus(
           "Recettes et liste de courses mises à jour automatiquement."
         );
       } else {
+        addMessage(
+          "model",
+          "J'ai généré un JSON, mais l'import automatique a échoué. Vérifie les règles de format et réessaie."
+        );
         setImportStatus(
           "Le JSON a été détecté, mais l'import a échoué."
         );
@@ -422,7 +434,7 @@ export default function MenuGenerator() {
                 Nouvelle conversation
               </button>
               <label
-                className="btn ghost icon"
+                className="btn ghost"
                 style={{ cursor: "pointer" }}
                 title="Joindre une image"
               >
