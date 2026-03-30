@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0,0");
+
 :root {
   font-family: "Source Sans 3", system-ui, sans-serif;
   line-height: 1.5;
@@ -49,12 +51,20 @@ a:hover {
 }
 
 .topbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1.25rem;
+  padding: 0.75rem 1rem;
   background: var(--card);
   border-bottom: 1px solid var(--border);
+  gap: 0.75rem;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  gap: 0.55rem;
 }
 
 .brand {
@@ -64,8 +74,12 @@ a:hover {
 
 .nav {
   display: flex;
-  gap: 1rem;
+  gap: 0.8rem;
   align-items: center;
+}
+
+.nav.nav-primary {
+  justify-self: center;
 }
 
 .nav a {
@@ -74,6 +88,74 @@ a:hover {
 
 .nav a.active {
   color: var(--accent);
+}
+
+.nav-ia-link {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+}
+
+.nav-ia-link.active {
+  background: #e8f5f1;
+  border-color: #9ecdc2;
+}
+
+.ia-symbol {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.topbar-menu {
+  position: relative;
+}
+
+.hamburger-btn {
+  min-width: 2.2rem;
+  padding: 0.35rem 0.55rem;
+}
+
+.hamburger-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.45rem);
+  min-width: 190px;
+  padding: 0.35rem;
+  z-index: 25;
+  box-shadow: 0 12px 24px rgba(20, 32, 31, 0.14);
+}
+
+.hamburger-item {
+  width: 100%;
+  display: block;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.5rem 0.6rem;
+  cursor: pointer;
+}
+
+.hamburger-item:hover {
+  background: #eef4f2;
+  text-decoration: none;
+}
+
+.hamburger-item.active {
+  color: var(--accent);
+}
+
+.logout-item {
+  color: var(--danger);
 }
 
 .offline-badge {
@@ -96,9 +178,8 @@ a:hover {
 
 .main {
   flex: 1;
-  padding: 1.25rem;
-  max-width: 960px;
-  margin: 0 auto;
+  padding: 1rem;
+  max-width: none;
   width: 100%;
 }
 
@@ -669,6 +750,36 @@ h2 {
 }
 
 @media (max-width: 720px) {
+  .topbar {
+    grid-template-columns: auto 1fr auto;
+    gap: 0.45rem;
+    padding: 0.65rem 0.75rem;
+  }
+
+  .brand {
+    font-size: 1.05rem;
+  }
+
+  .nav.nav-primary {
+    justify-content: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .nav.nav-primary a {
+    font-size: 0.92rem;
+  }
+
+  .hamburger-menu {
+    right: 0;
+    left: auto;
+  }
+
+  .offline-badge,
+  .sync-badge {
+    display: none;
+  }
+
   .stats {
     grid-template-columns: 1fr 1fr;
   }
