@@ -175,27 +175,29 @@ export default function DashboardPage() {
       ) : null}
 
       <div className="stats">
-        <div className="stat">
+        <Link to="/" className="stat">
           <span className="stat-label">À cuisiner</span>
           <span className="stat-value">{toCook}</span>
-        </div>
-        <div className="stat">
+        </Link>
+        <Link to="/" className="stat">
           <span className="stat-label">Déjà cuisiné</span>
           <span className="stat-value">{cooked}</span>
-        </div>
-        <div className="stat">
+        </Link>
+        <Link to="/courses" className="stat">
           <span className="stat-label">À acheter</span>
           <span className="stat-value">{toBuy}</span>
-        </div>
-        <div className="stat">
+        </Link>
+        <Link to="/courses" className="stat">
           <span className="stat-label">Déjà acheté</span>
           <span className="stat-value">{bought}</span>
-        </div>
+        </Link>
       </div>
 
-      <p className="muted small">
-        Réordonner les recettes : utilisez les flèches pour déplacer une recette dans la liste.
-      </p>
+      {active.length > 0 ? (
+        <p className="muted small">
+          Réordonner les recettes : utilisez les flèches pour déplacer une recette dans la liste.
+        </p>
+      ) : null}
 
       <ul className="recipe-list">
         {active.map((r, idx) => (
@@ -257,6 +259,27 @@ export default function DashboardPage() {
           </li>
         ))}
       </ul>
+
+      {active.length === 0 ? (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            margin: "2rem 0",
+          }}
+        >
+          <Link
+            to="/generateur-menus"
+            className="btn primary"
+            style={{
+              borderRadius: "999px",
+              paddingInline: "2.5rem",
+            }}
+          >
+            Générer mon premier menu
+          </Link>
+        </div>
+      ) : null}
 
       <div className="page-footer" style={{ marginTop: "1.5rem" }}>
         <button
