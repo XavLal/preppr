@@ -7,6 +7,7 @@ import {
   DEFAULT_CULINARY_STYLE_CONTEXT,
   DEFAULT_EQUIPMENT_CONTEXT,
   DEFAULT_FAMILY_CONTEXT,
+  DEFAULT_INTERACTION_CONTEXT,
   DEFAULT_TASTES_CONTEXT,
 } from "./userPromptDefaults.js";
 
@@ -47,6 +48,7 @@ export function emptyState(): AppState {
     tastesContext: DEFAULT_TASTES_CONTEXT,
     culinaryStyleContext: DEFAULT_CULINARY_STYLE_CONTEXT,
     equipmentContext: DEFAULT_EQUIPMENT_CONTEXT,
+    interactionContext: DEFAULT_INTERACTION_CONTEXT,
   };
 }
 
