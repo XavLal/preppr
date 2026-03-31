@@ -6,6 +6,7 @@ import {
   DEFAULT_EQUIPMENT_CONTEXT,
   DEFAULT_FAMILY_CONTEXT,
   DEFAULT_TASTES_CONTEXT,
+  DEFAULT_INTERACTION_CONTEXT,
   FIXED_JSON_RULES,
 } from "@/config/prompts.js";
 import { getTenantCacheKey } from "@/lib/tenantCacheKey";
@@ -20,7 +21,7 @@ function storageKeyFor(familyKey, field) {
 }
 
 const DEFAULT_ASSISTANT_WELCOME =
-  "Je peux générer des menus et les courses correspondantes. Indique moi combien de repas au total tu souhaites, et s'il y a des repas spécifiques (invités, etc.).";
+  "🍔 Je peux générer des menus et les courses correspondantes. \n👉 Indique moi:\n    - combien de repas tu souhaites au total\n    - s'il y a des repas spécifiques (invités, etc.)\n    - Contraintes, préférences, etc";
 
 function defaultConversation() {
   return [{ role: "model", content: DEFAULT_ASSISTANT_WELCOME }];
