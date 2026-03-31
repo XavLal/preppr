@@ -44,6 +44,8 @@ export function emptyState(): AppState {
     targetPortions: {},
     shopAisleOrder: normalizeAisleOrder([]),
     geminiApiKey: "",
+    claudeApiKey: "",
+    activeLlm: "gemini",
     familyContext: DEFAULT_FAMILY_CONTEXT,
     tastesContext: DEFAULT_TASTES_CONTEXT,
     culinaryStyleContext: DEFAULT_CULINARY_STYLE_CONTEXT,

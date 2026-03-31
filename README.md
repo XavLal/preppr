@@ -81,7 +81,6 @@ Données dans le volume `preppr-data` monté sur `/data`.
 
 - Déduplication à l’import, outil « nouvelle semaine »
 - File d’attente détaillée par opération (au-delà du snapshot + fusion actuelle)
-- Ajout d'un autre modèle IA pour les requêtes (ex: claude)
 - Analyse nutritionnelle des plats (https://fr.openfoodfacts.org)
 - Sauvegarde des recettes en local avec formattage https://cooklang.org/
 - API Intermarché pour le drive
