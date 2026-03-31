@@ -362,24 +362,8 @@ export default function MenuGenerator() {
         </p>
       ) : null}
 
-      <div
-        className="card"
-        style={{
-          padding: "0.9rem",
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.75rem",
-          minHeight: "65vh",
-        }}
-      >
-        <div
-          className="chat-messages"
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            padding: "0.25rem 0.1rem",
-          }}
-        >
+      <div className="card menu-generator-chat-card">
+        <div className="chat-messages">
           {messages.map((msg, idx) => {
             const isUser = msg.role === "user";
             return (
