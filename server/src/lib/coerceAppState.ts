@@ -5,6 +5,7 @@ import {
   DEFAULT_EQUIPMENT_CONTEXT,
   DEFAULT_FAMILY_CONTEXT,
   DEFAULT_TASTES_CONTEXT,
+  DEFAULT_INTERACTION_CONTEXT,
 } from "./userPromptDefaults.js";
 
 /** Complète les champs ajoutés après coup et normalise `shopAisleOrder`. */
@@ -16,6 +17,7 @@ export function coerceAppState(raw: AppState): AppState {
     tastesContext?: unknown;
     culinaryStyleContext?: unknown;
     equipmentContext?: unknown;
+    interactionContext?: unknown;
   };
   return {
     ...raw,
@@ -37,5 +39,9 @@ export function coerceAppState(raw: AppState): AppState {
       typeof partial.equipmentContext === "string"
         ? partial.equipmentContext
         : DEFAULT_EQUIPMENT_CONTEXT,
+    interactionContext:
+      typeof partial.interactionContext === "string"
+        ? partial.interactionContext
+        : DEFAULT_INTERACTION_CONTEXT,
   };
 }

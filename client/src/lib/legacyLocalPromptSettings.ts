@@ -3,6 +3,7 @@ import {
   DEFAULT_EQUIPMENT_CONTEXT,
   DEFAULT_FAMILY_CONTEXT,
   DEFAULT_TASTES_CONTEXT,
+  DEFAULT_INTERACTION_CONTEXT,
 } from "@/config/userContextDefaults";
 import type { AppState } from "@/types";
 
@@ -43,6 +44,7 @@ export function mergeLegacyLocalStoragePrompts(
   let tastesContext = DEFAULT_TASTES_CONTEXT;
   let culinaryStyleContext = DEFAULT_CULINARY_STYLE_CONTEXT;
   let equipmentContext = DEFAULT_EQUIPMENT_CONTEXT;
+  let interactionContext = DEFAULT_INTERACTION_CONTEXT;
 
   if (ctxRaw) {
     try {
@@ -54,17 +56,22 @@ export function mergeLegacyLocalStoragePrompts(
           culinaryStyleContext = obj.culinaryStyleContext;
         }
         if (typeof obj.equipmentContext === "string") equipmentContext = obj.equipmentContext;
+        if (typeof obj.interactionContext === "string") {
+          interactionContext = obj.interactionContext;
+        }
       } else {
         familyContext = String(ctxRaw);
         tastesContext = "";
         culinaryStyleContext = DEFAULT_CULINARY_STYLE_CONTEXT;
         equipmentContext = DEFAULT_EQUIPMENT_CONTEXT;
+        interactionContext = DEFAULT_INTERACTION_CONTEXT;
       }
     } catch {
       familyContext = String(ctxRaw);
       tastesContext = "";
       culinaryStyleContext = DEFAULT_CULINARY_STYLE_CONTEXT;
       equipmentContext = DEFAULT_EQUIPMENT_CONTEXT;
+      interactionContext = DEFAULT_INTERACTION_CONTEXT;
     }
   }
 
@@ -76,6 +83,7 @@ export function mergeLegacyLocalStoragePrompts(
       tastesContext,
       culinaryStyleContext,
       equipmentContext,
+      interactionContext,
     },
     migrated: true,
   };

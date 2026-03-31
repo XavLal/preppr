@@ -3,6 +3,7 @@ import {
   DEFAULT_EQUIPMENT_CONTEXT,
   DEFAULT_FAMILY_CONTEXT,
   DEFAULT_TASTES_CONTEXT,
+  DEFAULT_INTERACTION_CONTEXT,
 } from "@/config/userContextDefaults";
 import { normalizeAisleOrder } from "@/lib/shopAisles";
 import type { AppState } from "@/types";
@@ -16,6 +17,7 @@ export function normalizeAppState(raw: AppState): AppState {
     tastesContext?: unknown;
     culinaryStyleContext?: unknown;
     equipmentContext?: unknown;
+    interactionContext?: unknown;
   };
   return {
     ...raw,
@@ -33,5 +35,9 @@ export function normalizeAppState(raw: AppState): AppState {
       typeof p.equipmentContext === "string"
         ? p.equipmentContext
         : DEFAULT_EQUIPMENT_CONTEXT,
+    interactionContext:
+      typeof p.interactionContext === "string"
+        ? p.interactionContext
+        : DEFAULT_INTERACTION_CONTEXT,
   };
 }

@@ -20,7 +20,7 @@ function storageKeyFor(familyKey, field) {
 }
 
 const DEFAULT_ASSISTANT_WELCOME =
-  "Je peux générer un menu familial et les courses correspondantes. Décris simplement ce que tu as en tête.";
+  "Je peux générer des menus et les courses correspondantes. Indique moi combien de repas au total tu souhaites, et s'il y a des repas spécifiques (invités, etc.).";
 
 function defaultConversation() {
   return [{ role: "model", content: DEFAULT_ASSISTANT_WELCOME }];
@@ -36,9 +36,18 @@ function isValidChatMessage(value) {
 }
 
 function buildCustomUserContextText(profile) {
-  const role = typeof profile?.roleContext === "string" ? profile.roleContext : DEFAULT_ROLE_CONTEXT;
-  const family = typeof profile?.familyContext === "string" ? profile.familyContext : DEFAULT_FAMILY_CONTEXT;
-  const tastes = typeof profile?.tastesContext === "string" ? profile.tastesContext : DEFAULT_TASTES_CONTEXT;
+  const role =
+    typeof profile?.roleContext === "string"
+      ? profile.roleContext
+      : DEFAULT_ROLE_CONTEXT;
+  const family =
+    typeof profile?.familyContext === "string"
+      ? profile.familyContext
+      : DEFAULT_FAMILY_CONTEXT;
+  const tastes =
+    typeof profile?.tastesContext === "string"
+      ? profile.tastesContext
+      : DEFAULT_TASTES_CONTEXT;
   const culinaryStyle =
     typeof profile?.culinaryStyleContext === "string"
       ? profile.culinaryStyleContext
@@ -47,6 +56,10 @@ function buildCustomUserContextText(profile) {
     typeof profile?.equipmentContext === "string"
       ? profile.equipmentContext
       : DEFAULT_EQUIPMENT_CONTEXT;
+  const interraction =
+    typeof profile?.interactionContext === "string"
+      ? profile.interactionContext
+      : DEFAULT_INTERACTION_CONTEXT;
 
   return [
     "Rôle :",
@@ -63,6 +76,13 @@ function buildCustomUserContextText(profile) {
     "",
     "Équipements disponibles :",
     equipment.trim(),
+    "",
+    "Interaction avec l’IA :",
+    "## ÉTAPE 1 : Collecte du besoin",
+    "L'utilisateur va t'indiquer combien de repas il souhaite et s'il y a des repas spécifiques à prévoir.",
+    "",
+    "## ÉTAPE 2 : Interraction souhaitée",
+    interraction.trim(),
   ].join("\n");
 }
 

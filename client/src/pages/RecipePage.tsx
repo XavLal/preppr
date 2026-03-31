@@ -82,6 +82,12 @@ export default function RecipePage() {
             url={recipe.url}
           />
         </p>
+        <p className="muted small">
+          Temps de préparation : {recipe.prepTimeMinutes} min
+          {recipe.cookingTimeMinutes > 0
+            ? ` · Temps de cuisson : ${recipe.cookingTimeMinutes} min`
+            : ""}
+        </p>
         <div className="row wrap">
           <label className="field inline">
             <span>Portions</span>

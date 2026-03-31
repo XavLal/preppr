@@ -56,6 +56,26 @@ export default function DashboardPage() {
     });
   }
 
+  async function moveRecipe(id: string, direction: -1 | 1) {
+    await commit((d) => {
+      const indices: number[] = [];
+      for (let i = 0; i < d.recipes.length; i += 1) {
+        if (!d.recipes[i].removedFromPlan) indices.push(i);
+      }
+      const pos = indices.findIndex((idx) => d.recipes[idx].recipeInstanceId === id);
+      if (pos === -1) return;
+      const swapPos = pos + direction;
+      if (swapPos < 0 || swapPos >= indices.length) return;
+      const i = indices[pos]!;
+      const j = indices[swapPos]!;
+      const next = [...d.recipes];
+      const tmp = next[i]!;
+      next[i] = next[j]!;
+      next[j] = tmp;
+      d.recipes = next;
+    });
+  }
+
   const recipeCount = state?.recipes.length ?? 0;
   const canBulkClearRecipes =
     online && !pendingSync && recipeCount > 0;
@@ -98,15 +118,23 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      <p className="muted small">
+        Réordonner les recettes : utilisez les flèches pour déplacer une recette dans la liste.
+      </p>
+
       <ul className="recipe-list">
-        {active.map((r) => (
+        {active.map((r, idx) => (
           <li key={r.recipeInstanceId} className="recipe-card">
             <div className="recipe-card-head">
               <Link to={`/recette/${r.recipeInstanceId}`}>{r.title}</Link>
               {r.isSpecialMeal ? <span className="pill">Spécial</span> : null}
             </div>
             <p className="muted small">
-              {r.source} · {r.prepTimeMinutes} min · {r.tags.join(", ")}
+              {r.source}
+              {" · "}
+              {r.prepTimeMinutes} min prép.
+              {r.cookingTimeMinutes > 0 ? ` · ${r.cookingTimeMinutes} min cuisson` : ""}
+              {r.tags.length ? ` · ${r.tags.join(", ")}` : ""}
             </p>
             <div className="row">
               <label className="check">
@@ -117,6 +145,26 @@ export default function DashboardPage() {
                 />
                 Déjà fait
               </label>
+              <div className="row" style={{ gap: "0.25rem" }}>
+                <button
+                  type="button"
+                  className="btn icon ghost"
+                  disabled={idx === 0}
+                  aria-label="Monter la recette"
+                  onClick={() => void moveRecipe(r.recipeInstanceId, -1)}
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  className="btn icon ghost"
+                  disabled={idx === active.length - 1}
+                  aria-label="Descendre la recette"
+                  onClick={() => void moveRecipe(r.recipeInstanceId, 1)}
+                >
+                  ↓
+                </button>
+              </div>
               <button
                 type="button"
                 className="btn danger ghost"
@@ -146,7 +194,7 @@ export default function DashboardPage() {
           className="btn primary mb-[1rem]"
           onClick={() => setImportOpen(true)}
         >
-          + Ajouter
+          + Importer depuis un JSON
         </button>
         <Separator className="mb-[1.25rem]" />
         <p className="muted small">

@@ -14,6 +14,7 @@ export const importRecipeSchema = z.object({
   url: z.string().nullable(),
   portions: z.number().positive(),
   prepTimeMinutes: z.number().nonnegative(),
+  cookingTimeMinutes: z.number().nonnegative(),
   equipment: z.array(z.string()),
   tags: z.array(z.string()),
   isSpecialMeal: z.boolean(),

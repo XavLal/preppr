@@ -234,6 +234,7 @@ app.post("/api/import", async (req, reply) => {
     url: r.url,
     basePortions: r.portions,
     prepTimeMinutes: r.prepTimeMinutes,
+    cookingTimeMinutes: r.cookingTimeMinutes,
     equipment: r.equipment,
     tags: r.tags,
     isSpecialMeal: r.isSpecialMeal,

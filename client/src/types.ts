@@ -7,6 +7,7 @@ export type StoredRecipe = {
   url: string | null;
   basePortions: number;
   prepTimeMinutes: number;
+  cookingTimeMinutes: number;
   equipment: string[];
   tags: string[];
   isSpecialMeal: boolean;
@@ -46,4 +47,5 @@ export type AppState = {
   tastesContext: string;
   culinaryStyleContext: string;
   equipmentContext: string;
+  interactionContext: string;
 };

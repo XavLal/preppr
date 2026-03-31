@@ -12,3 +12,6 @@ export const DEFAULT_CULINARY_STYLE_CONTEXT =
 
 export const DEFAULT_EQUIPMENT_CONTEXT =
   "- Four\n- Plaque de cuisson\n- Poêle\n- Mixeur (optionnel)\n";
+
+export const DEFAULT_INTERACTION_CONTEXT =
+  "- Ton : bienveillant, concret, sans jargon.\n- Format : réponses courtes, étapes numérotées si nécessaire.\n- Préférence : proposer toujours 2 à 3 options quand il y a un choix important.\n";

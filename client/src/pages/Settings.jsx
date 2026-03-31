@@ -24,6 +24,7 @@ export default function Settings() {
     DEFAULT_CULINARY_STYLE_CONTEXT
   );
   const [equipmentContext, setEquipmentContext] = useState(DEFAULT_EQUIPMENT_CONTEXT);
+  const [interactionContext, setInteractionContext] = useState("");
 
   const lastPushedVersionRef = useRef(null);
 
@@ -40,6 +41,7 @@ export default function Settings() {
     setTastesContext(state.tastesContext);
     setCulinaryStyleContext(state.culinaryStyleContext);
     setEquipmentContext(state.equipmentContext);
+    setInteractionContext(state.interactionContext);
     setFormHydrated(true);
   }, [state?.version, state]);
 
@@ -50,7 +52,8 @@ export default function Settings() {
       familyContext === state.familyContext &&
       tastesContext === state.tastesContext &&
       culinaryStyleContext === state.culinaryStyleContext &&
-      equipmentContext === state.equipmentContext;
+      equipmentContext === state.equipmentContext &&
+      interactionContext === state.interactionContext;
     if (matches) return;
 
     setBusy(true);
@@ -62,6 +65,7 @@ export default function Settings() {
           d.tastesContext = tastesContext;
           d.culinaryStyleContext = culinaryStyleContext;
           d.equipmentContext = equipmentContext;
+          d.interactionContext = interactionContext;
         });
         setBusy(false);
         if (ok) {
@@ -119,12 +123,14 @@ export default function Settings() {
     setTastesContext(DEFAULT_TASTES_CONTEXT);
     setCulinaryStyleContext(DEFAULT_CULINARY_STYLE_CONTEXT);
     setEquipmentContext(DEFAULT_EQUIPMENT_CONTEXT);
+    setInteractionContext("");
     const ok = await commit((d) => {
       d.geminiApiKey = "";
       d.familyContext = DEFAULT_FAMILY_CONTEXT;
       d.tastesContext = DEFAULT_TASTES_CONTEXT;
       d.culinaryStyleContext = DEFAULT_CULINARY_STYLE_CONTEXT;
       d.equipmentContext = DEFAULT_EQUIPMENT_CONTEXT;
+      d.interactionContext = "";
     });
     showSavedToastIfOk(ok);
   }
@@ -183,21 +189,21 @@ export default function Settings() {
                   <div className="row" style={{ gap: "0.35rem" }}>
                     <button
                       type="button"
-                      className="btn ghost"
+                      className="btn icon ghost"
                       disabled={aisleControlsDisabled || i === 0}
                       onClick={() => void moveAisle(i, -1)}
                       aria-label={`Monter ${label}`}
                     >
-                      Monter
+                      ↑
                     </button>
                     <button
                       type="button"
-                      className="btn ghost"
+                      className="btn icon ghost"
                       disabled={aisleControlsDisabled || i === aisleOrder.length - 1}
                       onClick={() => void moveAisle(i, 1)}
                       aria-label={`Descendre ${label}`}
                     >
-                      Descendre
+                      ↓
                     </button>
                   </div>
                 </li>
@@ -309,6 +315,20 @@ export default function Settings() {
                 rows={6}
                 value={equipmentContext}
                 onChange={(e) => setEquipmentContext(e.target.value)}
+              />
+            </label>
+          </div>
+
+          <div>
+            <div className="row" style={{ justifyContent: "space-between" }}>
+              <strong>Interaction</strong>
+            </div>
+            <label className="field">
+              <span>(ton, longueur des réponses, préférences d’échange)</span>
+              <textarea
+                rows={6}
+                value={interactionContext}
+                onChange={(e) => setInteractionContext(e.target.value)}
               />
             </label>
           </div>
