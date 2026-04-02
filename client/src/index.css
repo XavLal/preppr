@@ -542,6 +542,37 @@ h2 {
   margin: 0 0 0.75rem;
 }
 
+.recipe-header .row.wrap {
+  align-items: center;
+}
+
+/* Aligne visuellement la ligne "Portions / Déjà fait / boutons". */
+.recipe-header .field.inline {
+  margin-bottom: 0;
+}
+
+.recipe-header .field.inline input {
+  height: 2.25rem;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+.recipe-header .check {
+  height: 2.25rem;
+}
+
+.recipe-header .btn {
+  min-height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recipe-header .btn.icon {
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
+}
+
 .aisle-block {
   margin-top: 1.25rem;
 }

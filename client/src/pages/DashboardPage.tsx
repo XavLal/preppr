@@ -291,7 +291,7 @@ export default function DashboardPage() {
         </p>
         <button
           type="button"
-          className="btn ghost mr-[0.5rem]"
+          className="btn ghost mr-[0.5rem] mb-[1rem]"
           onClick={() => setManualOpen(true)}
         >
           + Ajouter une recette manuellement
