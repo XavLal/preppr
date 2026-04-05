@@ -5,7 +5,9 @@ import {
   DEFAULT_FAMILY_CONTEXT,
   DEFAULT_TASTES_CONTEXT,
   DEFAULT_INTERACTION_CONTEXT,
+  DEFAULT_ROLE_CONTEXT,
 } from "@/config/prompts.js";
+import { buildFullLlmSystemPrompt } from "@/lib/llmSystemPrompt";
 import { normalizeAisleOrder } from "@/lib/shopAisles";
 import { useAppStore } from "@/store/useAppStore";
 
@@ -127,6 +129,28 @@ export default function Settings() {
       d.shopAisleOrder = normalizeAisleOrder([]);
     });
     showSavedToastIfOk(ok);
+  }
+
+  function exportFullLlmPrompt() {
+    const text = buildFullLlmSystemPrompt({
+      roleContext: DEFAULT_ROLE_CONTEXT,
+      familyContext,
+      tastesContext,
+      culinaryStyleContext,
+      equipmentContext,
+      interactionContext,
+    });
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "preppr-prompt-complet.txt";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setSavedMessage("Prompt complet exporté (fichier téléchargé)");
+    window.setTimeout(() => setSavedMessage(null), 2500);
   }
 
   async function resetPromptsToDefaults() {
@@ -425,6 +449,22 @@ export default function Settings() {
           {savedMessage}
         </div>
       ) : null}
+
+      <section className="card" style={{ marginTop: "1rem" }}>
+        <h2>Export du prompt IA</h2>
+        <p className="muted small">
+          Télécharge le texte exact de la <strong>consigne système</strong> envoyée au modèle (contexte
+          utilisateur + règles JSON), comme lors de l’envoi d’un message dans le générateur de menus.
+        </p>
+        <button
+          type="button"
+          className="btn ghost"
+          disabled={busy}
+          onClick={() => exportFullLlmPrompt()}
+        >
+          Exporter le prompt complet
+        </button>
+      </section>
     </div>
   );
 }
