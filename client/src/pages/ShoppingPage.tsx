@@ -38,6 +38,8 @@ export default function ShoppingPage() {
   const [formBusy, setFormBusy] = useState(false);
   const [clearShoppingOpen, setClearShoppingOpen] = useState(false);
   const [clearShoppingBusy, setClearShoppingBusy] = useState(false);
+  const [removeBoughtOpen, setRemoveBoughtOpen] = useState(false);
+  const [removeBoughtBusy, setRemoveBoughtBusy] = useState(false);
   const [draggingLineId, setDraggingLineId] = useState<string | null>(null);
   const dragGhostElRef = useRef<HTMLDivElement | null>(null);
   /** Rayon imposé (bouton + à côté du titre de rayon) : le select est masqué. */
@@ -231,13 +233,25 @@ export default function ShoppingPage() {
   const showAisleField = isEdit || !lockAisleInForm;
 
   const lineCount = state?.shoppingLines.length ?? 0;
+  const boughtLineCount =
+    state?.shoppingLines.filter((l) => l.checked).length ?? 0;
   const canBulkClearShopping = online && !pendingSync && lineCount > 0;
+  const canRemoveBought = boughtLineCount > 0;
 
   async function confirmClearAllShopping() {
     setClearShoppingBusy(true);
     const ok = await clearAllShopping();
     setClearShoppingBusy(false);
     if (ok) setClearShoppingOpen(false);
+  }
+
+  async function confirmRemoveBoughtLines() {
+    setRemoveBoughtBusy(true);
+    await commit((d) => {
+      d.shoppingLines = d.shoppingLines.filter((l) => !l.checked);
+    });
+    setRemoveBoughtBusy(false);
+    setRemoveBoughtOpen(false);
   }
 
   if (!state) {
@@ -484,27 +498,78 @@ export default function ShoppingPage() {
       <footer className="page-footer">
         <Separator className="mb-[1.25rem]" />
         <p className="muted small">
-          Supprime toutes les lignes de la liste. Les recettes et leurs ingrédients ne sont pas
-          modifiés.
+          Retirez d’un coup les articles déjà cochés, ou videz entièrement la liste. Les recettes et
+          leurs ingrédients ne sont pas modifiés.
         </p>
-        <button
-          type="button"
-          className="btn danger ghost"
-          disabled={!canBulkClearShopping}
-          title={
-            !online
-              ? "Connexion requise"
-              : pendingSync
-                ? "Synchronisation en attente"
-                : lineCount === 0
-                  ? "Liste déjà vide"
-                  : undefined
-          }
-          onClick={() => setClearShoppingOpen(true)}
-        >
-          Vider toute la liste
-        </button>
+        <div className="shop-footer-actions">
+          <button
+            type="button"
+            className="btn ghost"
+            disabled={!canRemoveBought}
+            title={
+              boughtLineCount === 0 ? "Aucun article coché" : undefined
+            }
+            onClick={() => setRemoveBoughtOpen(true)}
+          >
+            Retirer les articles cochés
+          </button>
+          <button
+            type="button"
+            className="btn danger ghost"
+            disabled={!canBulkClearShopping}
+            title={
+              !online
+                ? "Connexion requise"
+                : pendingSync
+                  ? "Synchronisation en attente"
+                  : lineCount === 0
+                    ? "Liste déjà vide"
+                    : undefined
+            }
+            onClick={() => setClearShoppingOpen(true)}
+          >
+            Vider toute la liste
+          </button>
+        </div>
       </footer>
+
+      {removeBoughtOpen ? (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="remove-bought-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !removeBoughtBusy) setRemoveBoughtOpen(false);
+          }}
+        >
+          <div className="card modal" onClick={(e) => e.stopPropagation()}>
+            <h2 id="remove-bought-title">Retirer les articles cochés ?</h2>
+            <p className="muted">
+              Les lignes cochées seront supprimées de la liste. Les articles non cochés restent ; les
+              recettes ne sont pas modifiées.
+            </p>
+            <div className="row end">
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={removeBoughtBusy}
+                onClick={() => setRemoveBoughtOpen(false)}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="btn primary"
+                disabled={removeBoughtBusy}
+                onClick={() => void confirmRemoveBoughtLines()}
+              >
+                {removeBoughtBusy ? "Retrait…" : "Retirer les cochés"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {clearShoppingOpen ? (
         <div

@@ -51,6 +51,9 @@ a:hover {
 }
 
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
@@ -386,6 +389,13 @@ h2 {
 
 .shop-reorder-hint {
   margin: -0.35rem 0 1rem;
+}
+
+.shop-footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .recipe-list {
