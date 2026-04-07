@@ -1,6 +1,14 @@
-import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  type FormEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import RecipeSourceLink from "@/components/RecipeSourceLink";
+import { parseStepIngredientSegments } from "@/lib/enrichStepIngredients";
 import {
   roundDisplay,
   scaleIngredientQuantity,
@@ -338,8 +346,7 @@ export default function RecipePage() {
     }
   }
 
-  const target =
-    state?.targetPortions[recipeId] ?? recipeSafe.basePortions;
+  const portionsForDisplay = localPortions;
 
   return (
     <div>
@@ -430,7 +437,7 @@ export default function RecipePage() {
                     ing.quantity,
                     ing.unit,
                     recipeSafe.basePortions,
-                    target
+                    portionsForDisplay
                   )}{" "}
                   {ing.unit}
                 </strong>{" "}
@@ -443,7 +450,22 @@ export default function RecipePage() {
           <h2>Étapes</h2>
           <ol>
             {recipeSafe.steps.map((step, i) => (
-              <li key={i}>{step}</li>
+              <li key={i}>
+                {parseStepIngredientSegments(
+                  step,
+                  recipeSafe.ingredients,
+                  recipeSafe.basePortions,
+                  portionsForDisplay
+                ).map((seg, j) =>
+                  seg.kind === "text" ? (
+                    <Fragment key={`${i}-${j}`}>{seg.text}</Fragment>
+                  ) : (
+                    <strong key={`${i}-${j}`}>
+                      {seg.quantity} {seg.unit} {seg.name}
+                    </strong>
+                  )
+                )}
+              </li>
             ))}
           </ol>
         </section>
