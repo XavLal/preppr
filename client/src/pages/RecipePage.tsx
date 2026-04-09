@@ -94,6 +94,21 @@ export default function RecipePage() {
   const recipeSafe = recipe;
   const recipeId = recipeSafe.recipeInstanceId;
 
+  function queuePortionsFlush(rawValue: number) {
+    if (flushPortionsTimerRef.current) {
+      window.clearTimeout(flushPortionsTimerRef.current);
+    }
+    flushPortionsTimerRef.current = window.setTimeout(() => {
+      void flushPortions(rawValue);
+    }, 250);
+  }
+
+  function updatePortionsWithStep(delta: number) {
+    const n = Math.max(1, Math.min(24, Math.round(localPortions + delta)));
+    setLocalPortions(n);
+    queuePortionsFlush(n);
+  }
+
   async function flushPortions(rawValue?: number) {
     const base = rawValue ?? localPortions;
     const v = Math.max(1, Math.min(24, Math.round(base)));
@@ -373,29 +388,44 @@ export default function RecipePage() {
         <div className="row wrap">
           <label className="field inline">
             <span>Portions</span>
-            <input
-              type="number"
-              min={1}
-              max={24}
-              value={localPortions}
-              onChange={(e) => {
-                const n = Number(e.target.value);
-                setLocalPortions(n);
-                if (flushPortionsTimerRef.current) {
-                  window.clearTimeout(flushPortionsTimerRef.current);
-                }
-                flushPortionsTimerRef.current = window.setTimeout(() => {
-                  void flushPortions(n);
-                }, 250);
-              }}
-              onBlur={() => {
-                if (flushPortionsTimerRef.current) {
-                  window.clearTimeout(flushPortionsTimerRef.current);
-                  flushPortionsTimerRef.current = null;
-                }
-                void flushPortions();
-              }}
-            />
+            <div className="portions-stepper">
+              <button
+                type="button"
+                className="btn icon portions-stepper-btn"
+                aria-label="Diminuer les portions"
+                onClick={() => updatePortionsWithStep(-1)}
+                disabled={localPortions <= 1}
+              >
+                -
+              </button>
+              <input
+                type="number"
+                min={1}
+                max={24}
+                value={localPortions}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  setLocalPortions(Number.isFinite(n) ? n : 1);
+                  queuePortionsFlush(n);
+                }}
+                onBlur={() => {
+                  if (flushPortionsTimerRef.current) {
+                    window.clearTimeout(flushPortionsTimerRef.current);
+                    flushPortionsTimerRef.current = null;
+                  }
+                  void flushPortions();
+                }}
+              />
+              <button
+                type="button"
+                className="btn icon portions-stepper-btn"
+                aria-label="Augmenter les portions"
+                onClick={() => updatePortionsWithStep(1)}
+                disabled={localPortions >= 24}
+              >
+                +
+              </button>
+            </div>
           </label>
           <label className="check">
             <input

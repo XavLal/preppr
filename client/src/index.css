@@ -615,6 +615,24 @@ h2 {
   padding-bottom: 0.35rem;
 }
 
+.recipe-header .portions-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.recipe-header .portions-stepper input {
+  width: 4.75rem;
+  text-align: center;
+}
+
+.recipe-header .btn.portions-stepper-btn {
+  min-width: 2.25rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
 .recipe-header .check {
   height: 2.25rem;
 }
