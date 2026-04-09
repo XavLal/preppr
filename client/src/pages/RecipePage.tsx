@@ -70,6 +70,7 @@ export default function RecipePage() {
       : 4;
   const [localPortions, setLocalPortions] = useState(baseTarget);
   const flushPortionsTimerRef = useRef<number | null>(null);
+  const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
 
   useEffect(() => {
     setLocalPortions(baseTarget);
@@ -80,6 +81,57 @@ export default function RecipePage() {
       if (flushPortionsTimerRef.current) {
         window.clearTimeout(flushPortionsTimerRef.current);
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function requestWakeLock() {
+      const wakeLockApi = (
+        navigator as Navigator & {
+          wakeLock?: { request: (type: "screen") => Promise<{ release: () => Promise<void> }> };
+        }
+      ).wakeLock;
+      if (!wakeLockApi || document.visibilityState !== "visible") return;
+      try {
+        const lock = await wakeLockApi.request("screen");
+        if (cancelled) {
+          await lock.release();
+          return;
+        }
+        wakeLockRef.current = lock;
+      } catch {
+        // Browser may deny wake lock (permissions, battery, unsupported).
+      }
+    }
+
+    async function releaseWakeLock() {
+      if (!wakeLockRef.current) return;
+      try {
+        await wakeLockRef.current.release();
+      } catch {
+        // Ignore release errors, lock may already be released.
+      } finally {
+        wakeLockRef.current = null;
+      }
+    }
+
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        void requestWakeLock();
+      } else {
+        void releaseWakeLock();
+      }
+    }
+
+    void requestWakeLock();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      void releaseWakeLock();
     };
   }, []);
 
