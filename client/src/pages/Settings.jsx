@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   DEFAULT_CULINARY_STYLE_CONTEXT,
   DEFAULT_EQUIPMENT_CONTEXT,
@@ -183,6 +184,17 @@ export default function Settings() {
       <h1>Paramètres</h1>
 
       <section className="card">
+        <h2>Application mobile</h2>
+        <p className="muted small">
+          Installez Preppr comme une application sur votre téléphone pour un accès plus rapide et une meilleure
+          expérience hors ligne sur la liste de courses.
+        </p>
+        <Link to="/parametres/installation-pwa" className="btn ghost">
+          Comment installer l’application (Android et iPhone)
+        </Link>
+      </section>
+
+      <section className="card" style={{ marginTop: "1rem" }}>
         <h2>Modèle d'IA</h2>
         <p className="muted small">
           Choisissez l'intelligence artificielle utilisée pour générer vos menus.

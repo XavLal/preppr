@@ -225,6 +225,17 @@ h2 {
   font: inherit;
 }
 
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+a.btn:hover {
+  text-decoration: none;
+}
+
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -600,6 +611,49 @@ h2 {
   margin: 0 0 0.75rem;
 }
 
+.pwa-install-help h1 {
+  margin-top: 0;
+}
+
+.pwa-help-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+
+.pwa-help-card {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+}
+
+.pwa-help-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.pwa-help-capture {
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--background);
+}
+
+@media (max-width: 720px) {
+  .pwa-help-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .recipe-header .row.wrap {
   align-items: center;
 }
@@ -882,6 +936,25 @@ h2 {
   display: none;
 }
 
+.pwa-install-banner {
+  position: fixed;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  padding: 0.85rem 0.9rem;
+  box-shadow: 0 10px 30px rgba(20, 32, 31, 0.2);
+}
+
+.pwa-install-title {
+  margin: 0 0 0.2rem;
+  font-weight: 700;
+}
+
+.pwa-install-actions {
+  margin-top: 0.6rem;
+}
+
 @media (max-width: 720px) {
   .topbar {
     grid-template-columns: auto 1fr auto;
@@ -925,6 +998,10 @@ h2 {
     display: block;
   }
 
+  .main {
+    padding-bottom: 6.2rem;
+  }
+
   .recipe-split {
     grid-template-columns: 1fr;
   }
@@ -961,5 +1038,11 @@ h2 {
   .modal-backdrop .card.modal textarea {
     max-height: 42vh;
     overflow: auto;
+  }
+}
+
+@media (min-width: 721px) {
+  .pwa-install-banner {
+    display: none;
   }
 }

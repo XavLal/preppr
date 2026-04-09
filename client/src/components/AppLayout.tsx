@@ -6,6 +6,7 @@ import { getTenantCacheKey } from "@/lib/tenantCacheKey";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { usePollState } from "@/hooks/usePollState";
 import { useAppStore } from "@/store/useAppStore";
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 
 export default function AppLayout() {
   const nav = useNavigate();
@@ -113,6 +114,7 @@ export default function AppLayout() {
       <main className="main">
         <Outlet />
       </main>
+      <PwaInstallPrompt />
     </div>
   );
 }
