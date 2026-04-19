@@ -258,9 +258,17 @@ export default function ShoppingPage() {
     return <p className="muted">Chargement…</p>;
   }
 
+  const printGeneratedAt = new Date().toLocaleString("fr-FR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
   return (
-    <div>
+    <div className="shopping-page">
       <h1>Liste de courses</h1>
+      <p className="muted small shop-print-generated shop-print-only">
+        Généré le {printGeneratedAt}
+      </p>
 
       {error ? (
         <p className="error banner" role="alert">
@@ -271,6 +279,15 @@ export default function ShoppingPage() {
       <div className="toolbar shop-toolbar">
         <button type="button" className="btn primary" onClick={openAddModal}>
           Ajouter un ingrédient
+        </button>
+        <button
+          type="button"
+          className="btn ghost"
+          disabled={lineCount === 0}
+          title={lineCount === 0 ? "Liste vide" : undefined}
+          onClick={() => window.print()}
+        >
+          Imprimer
         </button>
       </div>
       <p className="muted small shop-reorder-hint">
