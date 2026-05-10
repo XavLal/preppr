@@ -402,6 +402,11 @@ a.btn:hover {
   align-items: center;
 }
 
+/** Pousse « Imprimer » au bord droit ; reste à droite si la barre passe sur deux lignes. */
+.shop-toolbar-print {
+  margin-inline-start: auto;
+}
+
 .shop-print-only {
   display: none;
 }
@@ -1176,6 +1181,10 @@ a.btn:hover {
 
   .shopping-page .shop-line-qty strong {
     font-weight: 600;
+  }
+
+  .shopping-page .shop-line-qty {
+    margin-inline-end: 0.5em;
   }
 
   .shopping-page .shop-list li.checked .shop-line-qty,

@@ -3,16 +3,43 @@
  * Aligné sur l’historique `prompts.js` et `server/src/lib/userPromptDefaults.ts`.
  */
 export const DEFAULT_FAMILY_CONTEXT =
-  "- Taille de la famille : 4\n- Contraintes : zéro gâchis, aliments de saison.\n";
+    "- Taille de la famille : 4 (2 adultes et 2 enfants de 7 et 10 ans)\n" +
+    "- Contraintes : zéro gâchis, aliments de saison.\n";
 
 export const DEFAULT_TASTES_CONTEXT =
-  "- Préférences : plats équilibrés\n- Éviter : trop épicé, trop sucré.\n- Allergies : aucune connue\n";
+    "- Préférences : plats équilibrés, adaptés aux goûts des enfants\n" +
+    "- Éviter : trop épicé, trop sucré.\n" +
+    "- Allergies : aucune connue\n";
 
 export const DEFAULT_CULINARY_STYLE_CONTEXT =
-  "- Style : cuisine maison\n- Durée : 30-45 minutes\n- Niveau : simple (ingrédients faciles)\n";
+    "- Style : cuisine maison\n" +
+    "- Durée : < 30> minutes de préparation (sauf demande spécifique)\n" +
+    "- Niveau : simple (ingrédients faciles à trouver en supermarché)\n";
 
 export const DEFAULT_EQUIPMENT_CONTEXT =
-  "- Four\n- Plaque de cuisson\n- Poêle\n- Mixeur (optionnel)\n";
+    "Four, Plaque de cuisson, Micro-onde, Air Fryer, Friteuse, Thermomix, Cookeo, Gaufrier, Plancha, Four à pizza";
 
 export const DEFAULT_INTERACTION_CONTEXT =
-  "Traite toujours les repas spécifiques en premier, puis passe aux repas standards.\nPour chaque 'tour' de proposition :\n    - Propose exactement 3 choix de repas.\n    - Lorsque tu proposes tes 3 choix de repas, tu DOIS parser les sites indiqués ou utiliser l'outil de recherche Google pour trouver des recettes existantes sur les sites demandés. Affiche le lien source dès la proposition pour que l'utilisateur puisse cliquer dessus avant même de générer le JSON.\n\nPour chaque choix donne : Titre, mini-description, temps de préparation, équipement, source.\n\nL'utilisateur sélectionne 1, 2 ou 3 recettes parmi ces choix.\n\nÉquilibre dynamique : Déduis le nombre sélectionné du total attendu. S'il manque encore des repas, propose 3 nouveaux choix qui s'équilibrent nutritionnellement avec ce qui a déjà été choisi (ex: si l'utilisateur a pris de la viande rouge, propose ensuite du poisson, de la volaille ou du végétarien).\nRépète cette boucle jusqu'à ce que le nombre total de repas demandé soit atteint.\n";
+    "Traite d'abord les repas spécifiques demandés, puis les repas standards.\n" +
+    "\n" +
+    "**Pour chaque tour :**\n" +
+    "Propose exactement 3 recettes originales et de qualité.\n" +
+    "\n" +
+    "Pour chaque choix, affiche :\n" +
+    "- **Titre** de la recette\n" +
+    "- Mini-description appétissante (1-2 lignes)\n" +
+    "- Temps de préparation / cuisson\n" +
+    "- Équipement utilisé\n" +
+    "- Protéine principale (pour le suivi nutritionnel)\n" +
+    "\n" +
+    "L'utilisateur sélectionne 1, 2 ou 3 recettes parmi ces choix.\n" +
+    "\n" +
+    "**Équilibre dynamique :**\n" +
+    "Après chaque sélection, déduis les repas validés du total.\n" +
+    "S'il manque encore des repas, propose 3 nouveaux choix qui équilibrent la semaine :\n" +
+    "- Si viande rouge validée → proposer poisson, volaille ou végétarien\n" +
+    "- Si plat en sauce validé → proposer plat sec ou salade composée\n" +
+    "- Si recette longue validée → proposer recette express ensuite\n" +
+    "- Éviter de répéter deux fois la même protéine dans la même journée\n" +
+    "\n" +
+    "Répète jusqu'à atteindre le quota total."

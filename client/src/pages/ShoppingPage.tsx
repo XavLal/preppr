@@ -282,7 +282,7 @@ export default function ShoppingPage() {
         </button>
         <button
           type="button"
-          className="btn ghost"
+          className="btn ghost shop-toolbar-print"
           disabled={lineCount === 0}
           title={lineCount === 0 ? "Liste vide" : undefined}
           onClick={() => window.print()}
