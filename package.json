@@ -13,6 +13,7 @@
     "docker:publish": "node scripts/docker-publish.js"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "vite": "^8.0.1"
   }
 }
