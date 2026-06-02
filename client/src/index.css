@@ -496,6 +496,45 @@ a.btn:hover {
   flex-shrink: 0;
 }
 
+.menu-generator-image-picker {
+  position: relative;
+}
+
+.menu-generator-image-picker-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.35rem);
+  z-index: 20;
+  min-width: 11.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.35rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.menu-generator-image-picker-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.65rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.menu-generator-image-picker-item:hover,
+.menu-generator-image-picker-item:focus-visible {
+  background: var(--bg-muted, #f3f6f5);
+  outline: none;
+}
+
 @media (max-width: 520px) {
   .menu-generator-composer-meta .muted.small {
     font-size: 0.72rem;

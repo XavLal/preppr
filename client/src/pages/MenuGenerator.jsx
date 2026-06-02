@@ -145,13 +145,17 @@ export default function MenuGenerator() {
   const [selectedFileName, setSelectedFileName] = useState(null);
   const [importStatus, setImportStatus] = useState(null);
   const [chatHydrated, setChatHydrated] = useState(false);
+  const [imagePickerOpen, setImagePickerOpen] = useState(false);
+  const [enterKeySends, setEnterKeySends] = useState(false);
 
   const importJson = useAppStore((s) => s.importJson);
   const appError = useAppStore((s) => s.error);
 
   const textareaRef = useRef(null);
   const chatScrollRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const imagePickerAnchorRef = useRef(null);
   const initialReadIdxRef = useRef(0);
   const didInitialScrollRef = useRef(false);
   const prevMessageCountRef = useRef(0);
@@ -164,6 +168,26 @@ export default function MenuGenerator() {
   useEffect(() => {
     if (!state) void hydrate();
   }, [hydrate, state]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: coarse)");
+    const update = () => setEnterKeySends(!mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (!imagePickerOpen) return;
+    function handlePointerDown(e) {
+      const anchor = imagePickerAnchorRef.current;
+      if (anchor && !anchor.contains(e.target)) {
+        setImagePickerOpen(false);
+      }
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [imagePickerOpen]);
 
   const activeLlm = state?.activeLlm ?? "gemini";
   const apiKey = state?.geminiApiKey ?? "";
@@ -265,10 +289,26 @@ export default function MenuGenerator() {
   }
 
   function handleDraftKeyDown(e) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      void handleSendMessage();
+    if (e.key !== "Enter" || e.shiftKey || !enterKeySends) return;
+    e.preventDefault();
+    void handleSendMessage();
+  }
+
+  function handleImageFileChange(e, sourceLabel) {
+    const f = e.target.files?.[0];
+    setSelectedFile(f ?? null);
+    if (f) {
+      const name = f.name?.trim();
+      setSelectedFileName(
+        name && name !== "image.jpg" && name !== "image.jpeg"
+          ? name
+          : sourceLabel
+      );
+    } else {
+      setSelectedFileName(null);
     }
+    e.target.value = "";
+    setImagePickerOpen(false);
   }
 
   function startNewConversation() {
@@ -553,7 +593,12 @@ export default function MenuGenerator() {
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={handleDraftKeyDown}
-                placeholder="Écris ton message… (Entrée pour envoyer, Maj+Entrée pour une nouvelle ligne)"
+                enterKeyHint={enterKeySends ? "send" : "newline"}
+                placeholder={
+                  enterKeySends
+                    ? "Écris ton message… (Entrée pour envoyer, Maj+Entrée pour une nouvelle ligne)"
+                    : "Écris ton message… (Entrée = nouvelle ligne, bouton Envoyer pour envoyer)"
+                }
                 style={{
                   resize: "none",
                   overflow: "hidden",
@@ -565,28 +610,68 @@ export default function MenuGenerator() {
 
             <div className="menu-generator-composer-actions">
               <input
-                ref={fileInputRef}
+                ref={galleryInputRef}
                 type="file"
                 accept="image/*"
                 className="sr-only"
                 tabIndex={-1}
                 aria-hidden="true"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  setSelectedFile(f ?? null);
-                  setSelectedFileName(f ? f.name : null);
-                }}
+                onChange={(e) => handleImageFileChange(e, "Image choisie")}
               />
-              <button
-                type="button"
-                className="btn icon ghost p-[10px] h-[42px]"
-                disabled={isLoading}
-                title="Joindre une image"
-                aria-label="Joindre une image"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <IconImage />
-              </button>
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="sr-only"
+                tabIndex={-1}
+                aria-hidden="true"
+                onChange={(e) => handleImageFileChange(e, "Photo prise")}
+              />
+              <div className="menu-generator-image-picker" ref={imagePickerAnchorRef}>
+                {imagePickerOpen ? (
+                  <div
+                    className="menu-generator-image-picker-menu"
+                    role="menu"
+                    aria-label="Ajouter une image"
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="menu-generator-image-picker-item"
+                      onClick={() => {
+                        setImagePickerOpen(false);
+                        cameraInputRef.current?.click();
+                      }}
+                    >
+                      Prendre une photo
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="menu-generator-image-picker-item"
+                      onClick={() => {
+                        setImagePickerOpen(false);
+                        galleryInputRef.current?.click();
+                      }}
+                    >
+                      Choisir une image
+                    </button>
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  className="btn icon ghost p-[10px] h-[42px]"
+                  disabled={isLoading}
+                  title="Ajouter une image"
+                  aria-label="Ajouter une image"
+                  aria-expanded={imagePickerOpen}
+                  aria-haspopup="menu"
+                  onClick={() => setImagePickerOpen((open) => !open)}
+                >
+                  <IconImage />
+                </button>
+              </div>
               <button
                 type="button"
                 className="btn primary"
