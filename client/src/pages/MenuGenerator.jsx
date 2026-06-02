@@ -661,7 +661,7 @@ export default function MenuGenerator() {
                 ) : null}
                 <button
                   type="button"
-                  className="btn icon ghost p-[10px] h-[42px]"
+                  className="btn ghost"
                   disabled={isLoading}
                   title="Ajouter une image"
                   aria-label="Ajouter une image"
