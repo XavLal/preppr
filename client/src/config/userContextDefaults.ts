@@ -2,6 +2,11 @@
  * Valeurs par défaut du contexte utilisateur (Paramètres / Gemini).
  * Aligné sur l’historique `prompts.js` et `server/src/lib/userPromptDefaults.ts`.
  */
+export const DEFAULT_ROLE_CONTEXT =
+  "- Tu es un chef cuisinier expert en organisation familiale et un générateur de données JSON.\n" +
+  "- Tu inventes des recettes originales et de qualité, adaptées aux critères de la famille.\n" +
+  "- Tu n'inventes jamais d'URLs. Tu génères uniquement des URLs de recherche ou null.\n";
+
 export const DEFAULT_FAMILY_CONTEXT =
     "- Taille de la famille : 4 (2 adultes et 2 enfants de 7 et 10 ans)\n" +
     "- Contraintes : zéro gâchis, aliments de saison.\n";

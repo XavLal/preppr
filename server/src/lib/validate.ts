@@ -1,9 +1,12 @@
 import type { AppState } from "./types.js";
 
 export class StateValidationError extends Error {
-  constructor(message: string) {
+  readonly code: string;
+
+  constructor(code: string, message: string) {
     super(message);
     this.name = "StateValidationError";
+    this.code = code;
   }
 }
 
@@ -17,6 +20,7 @@ export function validateStateTransition(
   for (const [id, line] of prevShop) {
     if (!nextShop.has(id) && !line.checked) {
       throw new StateValidationError(
+        "shopping.check_before_remove",
         "Cochez l’article avant de le retirer de la liste de courses."
       );
     }
@@ -27,6 +31,7 @@ export function validateStateTransition(
     const was = prevRecipes.get(r.recipeInstanceId);
     if (was && !was.removedFromPlan && r.removedFromPlan && !r.alreadyCooked) {
       throw new StateValidationError(
+        "recipe.mark_cooked_before_remove",
         "Marquez la recette comme faite avant de la retirer de la planification."
       );
     }
@@ -36,6 +41,7 @@ export function validateStateTransition(
     const now = next.recipes.find((x) => x.recipeInstanceId === id);
     if (now && !was.removedFromPlan && now.removedFromPlan && !now.alreadyCooked) {
       throw new StateValidationError(
+        "recipe.mark_cooked_before_remove",
         "Marquez la recette comme faite avant de la retirer de la planification."
       );
     }
@@ -52,6 +58,7 @@ export function validateRecipesRemoved(
     if (!nextIds.has(was.recipeInstanceId)) {
       if (!was.alreadyCooked) {
         throw new StateValidationError(
+          "recipe.mark_cooked_before_remove",
           "Marquez la recette comme faite avant de la retirer de la planification."
         );
       }

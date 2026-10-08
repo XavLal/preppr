@@ -1,18 +1,21 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import {
-  DEFAULT_CULINARY_STYLE_CONTEXT,
-  DEFAULT_EQUIPMENT_CONTEXT,
-  DEFAULT_FAMILY_CONTEXT,
-  DEFAULT_TASTES_CONTEXT,
-  DEFAULT_INTERACTION_CONTEXT,
-  DEFAULT_ROLE_CONTEXT,
-} from "@/config/prompts.js";
+import { DEFAULT_ROLE_CONTEXT } from "@/config/prompts.js";
+import i18n, { currentLocale, setAppLocale } from "@/i18n";
+import { useCatalogLabels } from "@/i18n/labels";
+import { promptDefaults } from "@/i18n/prompts/catalog";
 import { buildFullLlmSystemPrompt } from "@/lib/llmSystemPrompt";
 import { normalizeAisleOrder } from "@/lib/shopAisles";
 import { useAppStore } from "@/store/useAppStore";
 
+function savedLabel() {
+  return i18n.t("settings:saved");
+}
+
 export default function Settings() {
+  const { t } = useTranslation("settings");
+  const { aisleLabel } = useCatalogLabels();
   const hydrate = useAppStore((s) => s.hydrate);
   const state = useAppStore((s) => s.state);
   const commit = useAppStore((s) => s.commit);
@@ -24,13 +27,12 @@ export default function Settings() {
   const [busy, setBusy] = useState(false);
   const [formHydrated, setFormHydrated] = useState(false);
 
-  const [familyContext, setFamilyContext] = useState(DEFAULT_FAMILY_CONTEXT);
-  const [tastesContext, setTastesContext] = useState(DEFAULT_TASTES_CONTEXT);
-  const [culinaryStyleContext, setCulinaryStyleContext] = useState(
-    DEFAULT_CULINARY_STYLE_CONTEXT
-  );
-  const [equipmentContext, setEquipmentContext] = useState(DEFAULT_EQUIPMENT_CONTEXT);
-  const [interactionContext, setInteractionContext] = useState(DEFAULT_INTERACTION_CONTEXT);
+  const defaults = promptDefaults();
+  const [familyContext, setFamilyContext] = useState(defaults.family);
+  const [tastesContext, setTastesContext] = useState(defaults.tastes);
+  const [culinaryStyleContext, setCulinaryStyleContext] = useState(defaults.culinaryStyle);
+  const [equipmentContext, setEquipmentContext] = useState(defaults.equipment);
+  const [interactionContext, setInteractionContext] = useState(defaults.interaction);
 
   const lastPushedVersionRef = useRef(null);
 
@@ -81,7 +83,7 @@ export default function Settings() {
         });
         setBusy(false);
         if (ok) {
-          setSavedMessage("Préférences enregistrées");
+          setSavedMessage(savedLabel());
           window.setTimeout(() => setSavedMessage(null), 2500);
         }
       })();
@@ -106,7 +108,7 @@ export default function Settings() {
 
   function showSavedToastIfOk(wasOk) {
     if (wasOk) {
-      setSavedMessage("Préférences enregistrées");
+      setSavedMessage(savedLabel());
       window.setTimeout(() => setSavedMessage(null), 2500);
     }
   }
@@ -150,7 +152,7 @@ export default function Settings() {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    setSavedMessage("Prompt complet exporté (fichier téléchargé)");
+    setSavedMessage(i18n.t("settings:exported"));
     window.setTimeout(() => setSavedMessage(null), 2500);
   }
 
@@ -158,20 +160,21 @@ export default function Settings() {
     setApiKey("");
     setClaudeApiKey("");
     setActiveLlm("gemini");
-    setFamilyContext(DEFAULT_FAMILY_CONTEXT);
-    setTastesContext(DEFAULT_TASTES_CONTEXT);
-    setCulinaryStyleContext(DEFAULT_CULINARY_STYLE_CONTEXT);
-    setEquipmentContext(DEFAULT_EQUIPMENT_CONTEXT);
-    setInteractionContext(DEFAULT_INTERACTION_CONTEXT);
+    const nextDefaults = promptDefaults();
+    setFamilyContext(nextDefaults.family);
+    setTastesContext(nextDefaults.tastes);
+    setCulinaryStyleContext(nextDefaults.culinaryStyle);
+    setEquipmentContext(nextDefaults.equipment);
+    setInteractionContext(nextDefaults.interaction);
     const ok = await commit((d) => {
       d.geminiApiKey = "";
       d.claudeApiKey = "";
       d.activeLlm = "gemini";
-      d.familyContext = DEFAULT_FAMILY_CONTEXT;
-      d.tastesContext = DEFAULT_TASTES_CONTEXT;
-      d.culinaryStyleContext = DEFAULT_CULINARY_STYLE_CONTEXT;
-      d.equipmentContext = DEFAULT_EQUIPMENT_CONTEXT;
-      d.interactionContext = DEFAULT_INTERACTION_CONTEXT;
+      d.familyContext = nextDefaults.family;
+      d.tastesContext = nextDefaults.tastes;
+      d.culinaryStyleContext = nextDefaults.culinaryStyle;
+      d.equipmentContext = nextDefaults.equipment;
+      d.interactionContext = nextDefaults.interaction;
     });
     showSavedToastIfOk(ok);
   }
@@ -181,47 +184,61 @@ export default function Settings() {
 
   return (
     <div className="settings">
-      <h1>Paramètres</h1>
+      <h1>{t("title")}</h1>
 
       <section className="card">
-        <h2>Application mobile</h2>
-        <p className="muted small">
-          Installez Preppr comme une application sur votre téléphone pour un accès plus rapide et une meilleure
-          expérience hors ligne sur la liste de courses.
-        </p>
+        <h2>{t("languageTitle")}</h2>
+        <p className="muted small">{t("languageHelp")}</p>
+        <label className="field">
+          <span>{t("languageLabel")}</span>
+          <select
+            value={currentLocale()}
+            onChange={(e) => setAppLocale(e.target.value === "en" ? "en" : "fr")}
+          >
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+      </section>
+
+      <section className="card" style={{ marginTop: "1rem" }}>
+        <h2>{t("mobileTitle")}</h2>
+        <p className="muted small">{t("mobileBody")}</p>
         <Link to="/parametres/installation-pwa" className="btn ghost">
-          Comment installer l’application (Android et iPhone)
+          {t("mobileLink")}
         </Link>
       </section>
 
       <section className="card" style={{ marginTop: "1rem" }}>
-        <h2>Modèle d'IA</h2>
-        <p className="muted small">
-          Choisissez l'intelligence artificielle utilisée pour générer vos menus.
-          La clé API est enregistrée avec vos données familiales sur le serveur.
-        </p>
+        <h2>{t("modelTitle")}</h2>
+        <p className="muted small">{t("modelBody")}</p>
 
         <label className="field">
-          <span>IA active</span>
+          <span>{t("activeModel")}</span>
           <select
             value={activeLlm}
             onChange={(e) => setActiveLlm(e.target.value)}
           >
-            <option value="gemini">Google Gemini</option>
-            <option value="claude">Anthropic Claude</option>
+            <option value="gemini">{t("gemini")}</option>
+            <option value="claude">{t("claude")}</option>
           </select>
         </label>
 
         {activeLlm === "gemini" && (
           <div style={{ marginTop: "1rem" }}>
-            <strong>Clé API Google Gemini</strong>
+            <strong>{t("geminiKeyTitle")}</strong>
             <ol className="muted small" style={{ paddingLeft: "1.25rem", margin: "0.4rem 0 0.75rem" }}>
-              <li>Va sur Google AI Studio, menu "Get API key" : <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer">ICI</a></li>
-              <li>Crée/copie la clé API.</li>
-              <li>Colle-la ci-dessous.</li>
+              <li>
+                {t("geminiStep1")}{" "}
+                <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer">
+                  {t("geminiStep1Link")}
+                </a>
+              </li>
+              <li>{t("geminiStep2")}</li>
+              <li>{t("geminiStep3")}</li>
             </ol>
             <label className="field">
-              <span>Clé API Gemini</span>
+              <span>{t("geminiKey")}</span>
               <input
                 type="password"
                 value={apiKey}
@@ -235,14 +252,20 @@ export default function Settings() {
 
         {activeLlm === "claude" && (
           <div style={{ marginTop: "1rem" }}>
-            <strong>Clé API Anthropic Claude</strong>
+            <strong>{t("claudeKeyTitle")}</strong>
             <ol className="muted small" style={{ paddingLeft: "1.25rem", margin: "0.4rem 0 0.75rem" }}>
-              <li>Va sur <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer">console.anthropic.com</a>.</li>
-              <li>Crée un compte et ajoute des crédits.</li>
-              <li>Génère une clé API et colle-la ci-dessous.</li>
+              <li>
+                {t("claudeStep1")}{" "}
+                <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer">
+                  console.anthropic.com
+                </a>
+                .
+              </li>
+              <li>{t("claudeStep2")}</li>
+              <li>{t("claudeStep3")}</li>
             </ol>
             <label className="field">
-              <span>Clé API Claude</span>
+              <span>{t("claudeKey")}</span>
               <input
                 type="password"
                 value={claudeApiKey}
@@ -256,12 +279,9 @@ export default function Settings() {
       </section>
 
       <section className="card" style={{ marginTop: "1rem" }}>
-        <h2>Ordre des rayons</h2>
-        <p className="muted small">
-          Ordre d’affichage des rayons sur la page Liste de courses (parcours de votre magasin).
-          Synchronisé avec votre famille comme les recettes et la liste de courses.
-        </p>
-        {!state ? <p className="muted small">Chargement des données…</p> : null}
+        <h2>{t("aislesTitle")}</h2>
+        <p className="muted small">{t("aislesBody")}</p>
+        {!state ? <p className="muted small">{t("common:loadingData")}</p> : null}
         {state ? (
           <>
             <ul
@@ -274,14 +294,14 @@ export default function Settings() {
                   className="row"
                   style={{ alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}
                 >
-                  <span style={{ flex: "1 1 12rem" }}>{label}</span>
+                  <span style={{ flex: "1 1 12rem" }}>{aisleLabel(label)}</span>
                   <div className="row" style={{ gap: "0.35rem" }}>
                     <button
                       type="button"
                       className="btn icon ghost"
                       disabled={aisleControlsDisabled || i === 0}
                       onClick={() => void moveAisle(i, -1)}
-                      aria-label={`Monter ${label}`}
+                      aria-label={t("moveAisleUp", { name: aisleLabel(label) })}
                     >
                       ↑
                     </button>
@@ -290,7 +310,7 @@ export default function Settings() {
                       className="btn icon ghost"
                       disabled={aisleControlsDisabled || i === aisleOrder.length - 1}
                       onClick={() => void moveAisle(i, 1)}
-                      aria-label={`Descendre ${label}`}
+                      aria-label={t("moveAisleDown", { name: aisleLabel(label) })}
                     >
                       ↓
                     </button>
@@ -305,7 +325,7 @@ export default function Settings() {
                 disabled={aisleControlsDisabled}
                 onClick={() => void resetAisleOrderDefault()}
               >
-                Réinitialiser l’ordre des rayons
+                {t("resetAisles")}
               </button>
             </div>
           </>
@@ -313,27 +333,24 @@ export default function Settings() {
       </section>
 
       <section className="card" style={{ marginTop: "1rem" }}>
-        <h2>Contexte utilisateur</h2>
-        <p className="muted small">
-          Ces champs constituent votre <strong>contexte utilisateur</strong> envoyé au générateur de menus.
-          Ils sont synchronisés pour toute la famille (même compte).
-        </p>
+        <h2>{t("contextTitle")}</h2>
+        <p className="muted small">{t("contextBody")}</p>
 
         <div style={{ display: "grid", gap: "1rem", marginTop: "0.5rem" }}>
           <div>
             <div className="row" style={{ justifyContent: "space-between" }}>
-              <strong>Famille</strong>
+              <strong>{t("family")}</strong>
               <button
                 type="button"
                 className="btn ghost"
                 disabled={busy}
-                onClick={() => setFamilyContext(DEFAULT_FAMILY_CONTEXT)}
+                onClick={() => setFamilyContext(promptDefaults().family)}
               >
-                Réinitialiser
+                {t("reset")}
               </button>
             </div>
             <label className="field">
-              <span>(taille / contraintes)</span>
+              <span>{t("familyHint")}</span>
               <textarea
                 rows={6}
                 value={familyContext}
@@ -344,18 +361,18 @@ export default function Settings() {
 
           <div>
             <div className="row" style={{ justifyContent: "space-between" }}>
-              <strong>Goûts</strong>
+              <strong>{t("tastes")}</strong>
               <button
                 type="button"
                 className="btn ghost"
                 disabled={busy}
-                onClick={() => setTastesContext(DEFAULT_TASTES_CONTEXT)}
+                onClick={() => setTastesContext(promptDefaults().tastes)}
               >
-                Réinitialiser
+                {t("reset")}
               </button>
             </div>
             <label className="field">
-              <span>(préférences / allergies)</span>
+              <span>{t("tastesHint")}</span>
               <textarea
                 rows={6}
                 value={tastesContext}
@@ -366,18 +383,18 @@ export default function Settings() {
 
           <div>
             <div className="row" style={{ justifyContent: "space-between" }}>
-              <strong>Style culinaire</strong>
+              <strong>{t("style")}</strong>
               <button
                 type="button"
                 className="btn ghost"
                 disabled={busy}
-                onClick={() => setCulinaryStyleContext(DEFAULT_CULINARY_STYLE_CONTEXT)}
+                onClick={() => setCulinaryStyleContext(promptDefaults().culinaryStyle)}
               >
-                Réinitialiser
+                {t("reset")}
               </button>
             </div>
             <label className="field">
-              <span>(recettes, durée, niveau...)</span>
+              <span>{t("styleHint")}</span>
               <textarea
                 rows={6}
                 value={culinaryStyleContext}
@@ -388,18 +405,18 @@ export default function Settings() {
 
           <div>
             <div className="row" style={{ justifyContent: "space-between" }}>
-              <strong>Équipements disponibles</strong>
+              <strong>{t("equipment")}</strong>
               <button
                 type="button"
                 className="btn ghost"
                 disabled={busy}
-                onClick={() => setEquipmentContext(DEFAULT_EQUIPMENT_CONTEXT)}
+                onClick={() => setEquipmentContext(promptDefaults().equipment)}
               >
-                Réinitialiser
+                {t("reset")}
               </button>
             </div>
             <label className="field">
-              <span>(four, robot, poêle...)</span>
+              <span>{t("equipmentHint")}</span>
               <textarea
                 rows={6}
                 value={equipmentContext}
@@ -410,18 +427,18 @@ export default function Settings() {
 
           <div>
             <div className="row" style={{ justifyContent: "space-between" }}>
-              <strong>Interaction</strong>
+              <strong>{t("interaction")}</strong>
               <button
                 type="button"
                 className="btn ghost"
                 disabled={busy}
-                onClick={() => setInteractionContext(DEFAULT_INTERACTION_CONTEXT)}
+                onClick={() => setInteractionContext(promptDefaults().interaction)}
               >
-                Réinitialiser
+                {t("reset")}
               </button>
             </div>
             <label className="field">
-              <span>(ton, longueur des réponses, préférences d’échange)</span>
+              <span>{t("interactionHint")}</span>
               <textarea
                 rows={6}
                 value={interactionContext}
@@ -440,9 +457,9 @@ export default function Settings() {
             className="btn ghost"
             disabled={busy}
             onClick={() => void resetPromptsToDefaults()}
-            title="Remet la clé API (vide) et le contexte utilisateur par défaut"
+            title={t("resetAllTitle")}
           >
-            Réinitialiser les préférences par défaut
+            {t("resetAll")}
           </button>
         </div>
       </section>
@@ -463,18 +480,15 @@ export default function Settings() {
       ) : null}
 
       <section className="card" style={{ marginTop: "1rem" }}>
-        <h2>Export du prompt IA</h2>
-        <p className="muted small">
-          Télécharge le texte exact de la <strong>consigne système</strong> envoyée au modèle (contexte
-          utilisateur + règles JSON), comme lors de l’envoi d’un message dans le générateur de menus.
-        </p>
+        <h2>{t("exportTitle")}</h2>
+        <p className="muted small">{t("exportBody")}</p>
         <button
           type="button"
           className="btn ghost"
           disabled={busy}
           onClick={() => exportFullLlmPrompt()}
         >
-          Exporter le prompt complet
+          {t("export")}
         </button>
       </section>
     </div>

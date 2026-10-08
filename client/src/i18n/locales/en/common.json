@@ -1,0 +1,37 @@
+{
+  "loading": "Loading…",
+  "loadingData": "Loading data…",
+  "cancel": "Cancel",
+  "offline": "Offline",
+  "offlineTitle": "No network connection",
+  "pendingSync": "To sync",
+  "pendingSyncTitle": "Sending changes…",
+  "openMenu": "Open menu",
+  "recipes": "Recipes",
+  "shopping": "Shopping",
+  "assistant": "AI assistant",
+  "settings": "Settings",
+  "logout": "Log out",
+  "connectionRequired": "Connection required",
+  "syncPending": "Sync pending",
+  "moveUp": "Move up",
+  "moveDown": "Move down",
+  "aisles": {
+    "fruitsLegumes": "Fruit & vegetables",
+    "viandesPoissons": "Meat & fish",
+    "fraisLaitier": "Dairy & chilled",
+    "epicerieSalee": "Savory groceries",
+    "epicerieSucree": "Sweet groceries",
+    "boulangerie": "Bakery",
+    "surgeles": "Frozen",
+    "boissons": "Drinks",
+    "hygieneBeaute": "Health & beauty",
+    "divers": "Other"
+  },
+  "units": {
+    "piece": "piece",
+    "pinch": "pinch",
+    "tbsp": "tbsp",
+    "tsp": "tsp"
+  }
+}

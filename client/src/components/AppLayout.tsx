@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { clearAuthToken } from "@/lib/authToken";
 import { clearAppCache } from "@/lib/offlineDb";
@@ -9,6 +10,7 @@ import { useAppStore } from "@/store/useAppStore";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 
 export default function AppLayout() {
+  const { t } = useTranslation("common");
   const nav = useNavigate();
   const location = useLocation();
   const online = useOnlineStatus();
@@ -63,14 +65,14 @@ export default function AppLayout() {
         </NavLink>
         <nav className="nav nav-primary">
           <NavLink to="/" end>
-            Recettes
+            {t("recipes")}
           </NavLink>
-          <NavLink to="/courses">Courses</NavLink>
+          <NavLink to="/courses">{t("shopping")}</NavLink>
           <NavLink
             to="/generateur-menus"
             className="nav-ia-link"
-            title="Assistant IA"
-            aria-label="Assistant IA"
+            title={t("assistant")}
+            aria-label={t("assistant")}
           >
             <span className="material-symbols-outlined ia-symbol" aria-hidden="true">
               generating_tokens
@@ -79,20 +81,20 @@ export default function AppLayout() {
         </nav>
         <div className="topbar-right">
           {!online ? (
-            <span className="offline-badge" title="Pas de connexion réseau">
-              Hors ligne
+            <span className="offline-badge" title={t("offlineTitle")}>
+              {t("offline")}
             </span>
           ) : null}
           {online && pendingSync ? (
-            <span className="sync-badge" title="Envoi des changements…">
-              À synchroniser
+            <span className="sync-badge" title={t("pendingSyncTitle")}>
+              {t("pendingSync")}
             </span>
           ) : null}
           <div className="topbar-menu" ref={menuRef}>
             <button
               type="button"
               className="btn ghost hamburger-btn"
-              aria-label="Ouvrir le menu"
+              aria-label={t("openMenu")}
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((v) => !v)}
             >
@@ -101,10 +103,10 @@ export default function AppLayout() {
             {menuOpen ? (
               <div className="hamburger-menu card" role="menu">
                 <NavLink to="/parametres" role="menuitem" className="hamburger-item">
-                  Paramètres
+                  {t("settings")}
                 </NavLink>
                 <button type="button" className="hamburger-item logout-item" onClick={logout}>
-                  Déconnexion
+                  {t("logout")}
                 </button>
               </div>
             ) : null}

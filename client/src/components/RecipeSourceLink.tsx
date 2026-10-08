@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { apiCheckRecipeUrl } from "@/api/client";
 import {
   buildGoogleRecipeSearchUrl,
@@ -12,21 +13,22 @@ type Props = {
 };
 
 export default function RecipeSourceLink({ title, source, url }: Props) {
+  const { t } = useTranslation("recipe");
   const [linkHref, setLinkHref] = useState<string>(() =>
     url ?? buildGoogleRecipeSearchUrl(title, source, hostnameForSiteSearch(url))
   );
   const [linkLabel, setLinkLabel] = useState(() =>
-    url ? "Voir la source" : "Chercher la recette sur le web"
+    url ? t("viewSource") : t("searchWeb")
   );
 
   useEffect(() => {
     if (!url) {
       setLinkHref(buildGoogleRecipeSearchUrl(title, source, null));
-      setLinkLabel("Chercher la recette sur le web");
+      setLinkLabel(t("searchWeb"));
       return;
     }
     setLinkHref(url);
-    setLinkLabel("Voir la source");
+    setLinkLabel(t("viewSource"));
 
     let cancelled = false;
     void (async () => {
@@ -40,7 +42,7 @@ export default function RecipeSourceLink({ title, source, url }: Props) {
           setLinkHref(
             buildGoogleRecipeSearchUrl(title, source, hostnameForSiteSearch(url))
           );
-          setLinkLabel("Rechercher sur le web (lien source invalide)");
+          setLinkLabel(t("searchBroken"));
         }
       } catch {
         if (!cancelled) {
@@ -52,12 +54,10 @@ export default function RecipeSourceLink({ title, source, url }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [url, title, source]);
+  }, [url, title, source, t]);
 
   const titleAttr =
-    url && linkHref !== url
-      ? "L’URL enregistrée renvoie une erreur (404) — recherche suggérée à la place."
-      : undefined;
+    url && linkHref !== url ? t("brokenUrlTitle") : undefined;
 
   return (
     <>

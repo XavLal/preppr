@@ -3,6 +3,7 @@ import {
   DEFAULT_CULINARY_STYLE_CONTEXT,
   DEFAULT_EQUIPMENT_CONTEXT,
   DEFAULT_FAMILY_CONTEXT,
+  DEFAULT_ROLE_CONTEXT,
   DEFAULT_TASTES_CONTEXT,
   DEFAULT_INTERACTION_CONTEXT,
 } from "./userContextDefaults.ts";
@@ -17,14 +18,10 @@ export {
   DEFAULT_CULINARY_STYLE_CONTEXT,
   DEFAULT_EQUIPMENT_CONTEXT,
   DEFAULT_FAMILY_CONTEXT,
+  DEFAULT_ROLE_CONTEXT,
   DEFAULT_TASTES_CONTEXT,
   DEFAULT_INTERACTION_CONTEXT,
 };
-
-export const DEFAULT_ROLE_CONTEXT =
-    "- Tu es un chef cuisinier expert en organisation familiale et un générateur de données JSON.\n" +
-    "- Tu inventes des recettes originales et de qualité, adaptées aux critères de la famille.\n" +
-    "- Tu n'inventes jamais d'URLs. Tu génères uniquement des URLs de recherche ou null.\n";
 
 export const DEFAULT_USER_CONTEXT =
   [

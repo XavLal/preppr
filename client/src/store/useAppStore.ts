@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import { create } from "zustand";
 import {
   apiClearRecipes,
@@ -109,8 +110,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
               loading: false,
               pendingSync: row.pendingSync,
               error: row.pendingSync
-                ? "Hors ligne — vos changements seront envoyés au retour du réseau."
-                : "Hors ligne — affichage des dernières données en cache.",
+                ? i18n.t("errors:offline_pending")
+                : i18n.t("errors:offline_cache"),
             });
             return;
           }
@@ -120,9 +121,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
       set({
         error:
-          e instanceof Error
-            ? e.message
-            : "Impossible de charger les données (réseau ou serveur).",
+          e instanceof Error ? e.message : i18n.t("errors:load_network"),
         loading: false,
       });
     }
@@ -144,7 +143,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return true;
     } catch (e) {
       set({
-        error: e instanceof Error ? e.message : "Import impossible",
+        error: e instanceof Error ? e.message : i18n.t("errors:import_failed"),
       });
       return false;
     }
@@ -207,8 +206,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (!online || get().pendingSync) {
       set({
         error: get().pendingSync
-          ? "Synchronisez d’abord les changements en attente."
-          : "Connexion requise pour supprimer toutes les recettes.",
+          ? i18n.t("errors:sync_first")
+          : i18n.t("errors:online_required_clear_recipes"),
       });
       return false;
     }
@@ -232,7 +231,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     } catch (e) {
       set({
         error:
-          e instanceof Error ? e.message : "Suppression de toutes les recettes impossible.",
+          e instanceof Error ? e.message : i18n.t("errors:clear_recipes_failed"),
       });
       return false;
     }
@@ -245,8 +244,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (!online || get().pendingSync) {
       set({
         error: get().pendingSync
-          ? "Synchronisez d’abord les changements en attente."
-          : "Connexion requise pour vider la liste de courses.",
+          ? i18n.t("errors:sync_first")
+          : i18n.t("errors:online_required_clear_shopping"),
       });
       return false;
     }
@@ -270,7 +269,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     } catch (e) {
       set({
         error:
-          e instanceof Error ? e.message : "Impossible de vider la liste de courses.",
+          e instanceof Error ? e.message : i18n.t("errors:clear_shopping_list_failed"),
       });
       return false;
     }

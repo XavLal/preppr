@@ -1,9 +1,11 @@
 import { type FormEvent, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { apiLogin } from "@/api/client";
 import { setAuthToken } from "@/lib/authToken";
 
 export default function LoginPage() {
+  const { t } = useTranslation(["login", "errors"]);
   const nav = useNavigate();
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
@@ -20,7 +22,7 @@ export default function LoginPage() {
       setAuthToken(res.token, rememberMe);
       nav("/", { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur");
+      setError(err instanceof Error ? err.message : t("errors:generic"));
     } finally {
       setPending(false);
     }
@@ -30,9 +32,9 @@ export default function LoginPage() {
     <div className="auth-wrap">
       <form className="card auth-card" onSubmit={onSubmit}>
         <h1>Preppr</h1>
-        <p className="muted">Connexion famille</p>
+        <p className="muted">{t("subtitle")}</p>
         <label className="field">
-          <span>Identifiant</span>
+          <span>{t("username")}</span>
           <input
             autoComplete="username"
             value={login}
@@ -41,7 +43,7 @@ export default function LoginPage() {
           />
         </label>
         <label className="field">
-          <span>Mot de passe</span>
+          <span>{t("password")}</span>
           <input
             type="password"
             autoComplete="current-password"
@@ -56,11 +58,11 @@ export default function LoginPage() {
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
           />
-          Se souvenir de moi
+          {t("rememberMe")}
         </label>
         {error ? <p className="error">{error}</p> : null}
         <button type="submit" className="btn primary" disabled={pending}>
-          {pending ? "Connexion…" : "Se connecter"}
+          {pending ? t("pending") : t("submit")}
         </button>
       </form>
     </div>

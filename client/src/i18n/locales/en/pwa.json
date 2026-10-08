@@ -1,0 +1,21 @@
+{
+  "bannerTitle": "Install Preppr on your phone",
+  "bannerAndroid": "Open your recipes faster and use the shopping list like an app.",
+  "bannerIos": "On iPhone, tap Share, then Add to Home Screen.",
+  "later": "Later",
+  "install": "Install",
+  "breadcrumb": "Install the app",
+  "title": "Install Preppr on your phone",
+  "intro": "Once installed, Preppr opens like an app and the shopping list stays usable offline (based on what your browser has already cached).",
+  "androidTitle": "Android (Chrome)",
+  "androidBody": "Tap the ⋮ menu at the top right, then choose Install app or Add to Home screen (depending on the version).",
+  "androidCaption": "Diagram of the Chrome menu on Android with the install-app option",
+  "androidInstall": "Install app",
+  "iosTitle": "iPhone or iPad (Safari)",
+  "iosBody": "Tap the Share button, scroll if needed, then Add to Home Screen.",
+  "iosCaption": "Diagram of Safari on iPhone with the Share button and Add to Home Screen",
+  "iosShare": "Share",
+  "iosAdd": "Add to Home Screen",
+  "httpsHint": "If you do not see an install prompt, check that you open the site over HTTPS and that you are using Chrome (Android) or Safari (iOS).",
+  "back": "Back to settings"
+}

@@ -1,7 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Anthropic from "@anthropic-ai/sdk";
 import { DEFAULT_ROLE_CONTEXT } from "@/config/prompts.js";
+import i18n from "@/i18n";
 import { buildFullLlmSystemPrompt } from "@/lib/llmSystemPrompt";
 import { getTenantCacheKey } from "@/lib/tenantCacheKey";
 import { useAppStore } from "@/store/useAppStore";
@@ -14,11 +16,8 @@ function storageKeyFor(familyKey, field) {
   return `preppr_${familyKey}_${field}`;
 }
 
-const DEFAULT_ASSISTANT_WELCOME =
-  "🍔 Je peux générer des menus et les courses correspondantes. \n👉 Indique moi:\n    - combien de repas tu souhaites au total\n    - s'il y a des repas spécifiques (invités, etc.)\n    - Contraintes, préférences, etc";
-
 function defaultConversation() {
-  return [{ role: "model", content: DEFAULT_ASSISTANT_WELCOME }];
+  return [{ role: "model", content: i18n.t("generator:welcome") }];
 }
 
 function isValidChatMessage(value) {
@@ -107,12 +106,12 @@ function fileToGenerativePart(file) {
     reader.onload = () => {
       const result = reader.result;
       if (typeof result !== "string") {
-        reject(new Error("Impossible de lire l'image sélectionnée."));
+        reject(new Error(i18n.t("generator:readImageFailed")));
         return;
       }
       const base64 = result.split(",")[1];
       if (!base64) {
-        reject(new Error("Format d'image invalide pour l'envoi."));
+        reject(new Error(i18n.t("generator:badImageFormat")));
         return;
       }
       resolve({
@@ -122,12 +121,13 @@ function fileToGenerativePart(file) {
         },
       });
     };
-    reader.onerror = () => reject(new Error("Lecture de l'image impossible."));
+    reader.onerror = () => reject(new Error(i18n.t("generator:imageReadFailed")));
     reader.readAsDataURL(file);
   });
 }
 
 export default function MenuGenerator() {
+  const { t, i18n: i18nInstance } = useTranslation("generator");
   const familyKey = useMemo(() => tenantKeyOrDefault(), []);
 
   const chatStorageKey = useMemo(
@@ -209,6 +209,7 @@ export default function MenuGenerator() {
     state?.culinaryStyleContext,
     state?.equipmentContext,
     state?.interactionContext,
+    i18nInstance.language,
   ]);
 
   useEffect(() => {
@@ -330,7 +331,8 @@ export default function MenuGenerator() {
     const text = draft.trim();
     if ((!text && !selectedFile) || isLoading) return;
 
-    const visualUserMessage = text || `Image envoyée : ${selectedFileName ?? "photo"}`;
+    const visualUserMessage =
+      text || t("imageSent", { name: selectedFileName ?? t("photo") });
     const userMessage = { role: "user", content: visualUserMessage };
 
     addMessage(userMessage.role, userMessage.content);
@@ -341,7 +343,7 @@ export default function MenuGenerator() {
 
     if (!activeApiKey.trim()) {
       const llmLabel = activeLlm === "claude" ? "Claude (Anthropic)" : "Gemini (Google)";
-      addMessage("model", `Clé API ${llmLabel} manquante. Ajoute-la dans Paramètres.`);
+      addMessage("model", t("missingKeyChat", { provider: llmLabel }));
       setIsLoading(false);
       return;
     }
@@ -415,14 +417,14 @@ export default function MenuGenerator() {
 
         answer =
           result.response.text()?.trim() ||
-          "Je n'ai pas reçu de réponse exploitable de Gemini.";
+          t("noGeminiAnswer");
       }
 
       const jsonPayload = extractJsonPayload(answer);
       if (!jsonPayload) {
         addMessage("model", answer);
         setImportStatus(
-          "Réponse IA reçue, mais aucun JSON importable n'a été détecté."
+          t("noJson")
         );
         return;
       }
@@ -431,7 +433,7 @@ export default function MenuGenerator() {
         JSON.parse(jsonPayload);
       } catch {
         setImportStatus(
-          "Réponse IA reçue, mais le JSON détecté est invalide."
+          t("badJson")
         );
         return;
       }
@@ -440,27 +442,27 @@ export default function MenuGenerator() {
       if (imported) {
         addMessage(
           "model",
-          "C'est fait. Les recettes ont été importées automatiquement et la liste de courses est prête."
+          t("imported")
         );
         setImportStatus(
-          "Recettes et liste de courses mises à jour automatiquement."
+          t("importedStatus")
         );
       } else {
         addMessage(
           "model",
-          "J'ai généré un JSON, mais l'import automatique a échoué. Vérifie les règles de format et réessaie."
+          t("importFailedChat")
         );
         setImportStatus(
-          "Le JSON a été détecté, mais l'import a échoué."
+          t("importFailedStatus")
         );
       }
     } catch (error) {
       const llmLabel = activeLlm === "claude" ? "Claude" : "Gemini";
       const message =
-        error instanceof Error ? error.message : `Erreur inconnue pendant l'appel ${llmLabel}.`;
+        error instanceof Error ? error.message : t("unknownError", { provider: llmLabel });
       addMessage(
         "model",
-        `Impossible de contacter ${llmLabel} pour le moment. Détail : ${message}`
+        t("contactFailed", { provider: llmLabel, detail: message })
       );
     } finally {
       setIsLoading(false);
@@ -472,14 +474,14 @@ export default function MenuGenerator() {
   return (
     <div className="menu-generator">
       <div className="menu-generator-header">
-        <h1>Générateur de Menus</h1>
+        <h1>{t("title")}</h1>
         <button
           type="button"
           className="btn icon ghost"
           disabled={isLoading}
           onClick={startNewConversation}
-          title="Nouvelle conversation"
-          aria-label="Nouvelle conversation"
+          title={t("newChat")}
+          aria-label={t("newChat")}
         >
           <IconRefresh />
         </button>
@@ -495,8 +497,10 @@ export default function MenuGenerator() {
             marginBottom: "0.75rem",
           }}
         >
-          Aucune clé API {activeLlm === "claude" ? "Claude (Anthropic)" : "Gemini (Google)"} configurée.{" "}
-          <a href="/parametres">Configurez-la dans les Paramètres.</a>
+          {t("missingKey", {
+            provider: activeLlm === "claude" ? "Claude (Anthropic)" : "Gemini (Google)",
+          })}{" "}
+          <a href="/parametres">{t("configure")}</a>
         </p>
       ) : null}
       {importStatus ? (
@@ -545,7 +549,7 @@ export default function MenuGenerator() {
                     lineHeight: 1.4,
                     border: isUser ? "1px solid #095848" : "1px solid #cfeee4",
                   }}
-                  aria-label={isUser ? "Message utilisateur" : "Message IA"}
+                  aria-label={isUser ? t("userMessage") : t("modelMessage")}
                 >
                   {msg.content}
                 </div>
@@ -565,7 +569,7 @@ export default function MenuGenerator() {
                   border: "1px solid #cfeee4",
                 }}
               >
-                Génération…
+                {t("generating")}
               </div>
             </div>
           ) : null}
@@ -574,19 +578,19 @@ export default function MenuGenerator() {
         <div className="menu-generator-composer-meta">
           <div className="muted small">
             {activeApiKey
-              ? `Clé API ${activeLlm === "claude" ? "Claude" : "Gemini"} détectée.`
-              : "Ajoute une clé API pour activer la génération."}
+              ? t("keyDetected", { provider: activeLlm === "claude" ? "Claude" : "Gemini" })
+              : t("addKey")}
           </div>
 
           {selectedFileName ? (
             <div className="muted small" style={{ marginTop: "-0.15rem" }}>
-              Image : <strong>{selectedFileName}</strong>
+              {t("imageLabel")} <strong>{selectedFileName}</strong>
             </div>
           ) : null}
 
           <div className="menu-generator-composer-row">
             <label className="field">
-              <span className="sr-only">Message</span>
+              <span className="sr-only">{t("message")}</span>
               <textarea
                 ref={textareaRef}
                 rows={1}
@@ -594,11 +598,7 @@ export default function MenuGenerator() {
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={handleDraftKeyDown}
                 enterKeyHint={enterKeySends ? "send" : "newline"}
-                placeholder={
-                  enterKeySends
-                    ? "Écris ton message… (Entrée pour envoyer, Maj+Entrée pour une nouvelle ligne)"
-                    : "Écris ton message… (Entrée = nouvelle ligne, bouton Envoyer pour envoyer)"
-                }
+                placeholder={enterKeySends ? t("placeholderSend") : t("placeholderNewline")}
                 style={{
                   resize: "none",
                   overflow: "hidden",
@@ -616,7 +616,7 @@ export default function MenuGenerator() {
                 className="sr-only"
                 tabIndex={-1}
                 aria-hidden="true"
-                onChange={(e) => handleImageFileChange(e, "Image choisie")}
+                onChange={(e) => handleImageFileChange(e, t("chosenImage"))}
               />
               <input
                 ref={cameraInputRef}
@@ -626,14 +626,14 @@ export default function MenuGenerator() {
                 className="sr-only"
                 tabIndex={-1}
                 aria-hidden="true"
-                onChange={(e) => handleImageFileChange(e, "Photo prise")}
+                onChange={(e) => handleImageFileChange(e, t("takenPhoto"))}
               />
               <div className="menu-generator-image-picker" ref={imagePickerAnchorRef}>
                 {imagePickerOpen ? (
                   <div
                     className="menu-generator-image-picker-menu"
                     role="menu"
-                    aria-label="Ajouter une image"
+                    aria-label={t("addImage")}
                   >
                     <button
                       type="button"
@@ -644,7 +644,7 @@ export default function MenuGenerator() {
                         cameraInputRef.current?.click();
                       }}
                     >
-                      Prendre une photo
+                      {t("takePhoto")}
                     </button>
                     <button
                       type="button"
@@ -655,7 +655,7 @@ export default function MenuGenerator() {
                         galleryInputRef.current?.click();
                       }}
                     >
-                      Choisir une image
+                      {t("chooseImage")}
                     </button>
                   </div>
                 ) : null}
@@ -663,8 +663,8 @@ export default function MenuGenerator() {
                   type="button"
                   className="btn ghost"
                   disabled={isLoading}
-                  title="Ajouter une image"
-                  aria-label="Ajouter une image"
+                  title={t("addImage")}
+                  aria-label={t("addImage")}
                   aria-expanded={imagePickerOpen}
                   aria-haspopup="menu"
                   onClick={() => setImagePickerOpen((open) => !open)}
@@ -678,7 +678,7 @@ export default function MenuGenerator() {
                 disabled={isLoading || (draft.trim().length === 0 && !selectedFile)}
                 onClick={() => void handleSendMessage()}
               >
-                {isLoading ? "Envoi…" : "Envoyer"}
+                {isLoading ? t("sending") : t("send")}
               </button>
             </div>
           </div>

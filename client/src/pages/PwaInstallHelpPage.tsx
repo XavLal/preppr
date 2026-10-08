@@ -1,6 +1,13 @@
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-function AndroidInstallIllustration() {
+function AndroidInstallIllustration({
+  caption,
+  installLabel,
+}: {
+  caption: string;
+  installLabel: string;
+}) {
   return (
     <svg
       className="pwa-help-capture"
@@ -8,9 +15,7 @@ function AndroidInstallIllustration() {
       role="img"
       aria-labelledby="pwa-android-cap-title"
     >
-      <title id="pwa-android-cap-title">
-        Schéma du menu Chrome sur Android avec l’option d’installation de l’application
-      </title>
+      <title id="pwa-android-cap-title">{caption}</title>
       <rect width="320" height="420" fill="#e8ecea" rx="12" />
       <rect x="12" y="12" width="296" height="44" fill="#fff" rx="8" stroke="#d5dedc" />
       <circle cx="36" cy="34" r="10" fill="#cbd5d1" />
@@ -32,7 +37,7 @@ function AndroidInstallIllustration() {
       <rect x="152" y="282" width="144" height="12" rx="3" fill="#f4f7f6" />
       <rect x="152" y="302" width="144" height="32" rx="6" fill="#e8f5f1" stroke="#0d8065" strokeWidth="1.5" />
       <text x="176" y="322" fill="#095848" fontSize="10" fontWeight="600" fontFamily="system-ui, sans-serif">
-        Installer l’app
+        {installLabel}
       </text>
       <rect x="152" y="342" width="144" height="22" rx="4" fill="#f4f7f6" />
       <rect x="152" y="370" width="144" height="22" rx="4" fill="#f4f7f6" />
@@ -40,7 +45,15 @@ function AndroidInstallIllustration() {
   );
 }
 
-function IosInstallIllustration() {
+function IosInstallIllustration({
+  caption,
+  shareLabel,
+  addLabel,
+}: {
+  caption: string;
+  shareLabel: string;
+  addLabel: string;
+}) {
   return (
     <svg
       className="pwa-help-capture"
@@ -48,9 +61,7 @@ function IosInstallIllustration() {
       role="img"
       aria-labelledby="pwa-ios-cap-title"
     >
-      <title id="pwa-ios-cap-title">
-        Schéma de Safari sur iPhone avec le bouton Partager et l’option Sur l’écran d’accueil
-      </title>
+      <title id="pwa-ios-cap-title">{caption}</title>
       <rect width="320" height="420" fill="#e8ecea" rx="12" />
       <rect x="12" y="12" width="296" height="36" fill="#fff" rx="8" stroke="#d5dedc" />
       <rect x="24" y="24" width="120" height="12" rx="3" fill="#eef4f2" />
@@ -72,12 +83,12 @@ function IosInstallIllustration() {
         fill="none"
       />
       <text x="64" y="388" textAnchor="middle" fill="#5a6a68" fontSize="8" fontFamily="system-ui, sans-serif">
-        Partager
+        {shareLabel}
       </text>
       <rect x="110" y="320" width="200" height="76" fill="#fff" rx="10" stroke="#0d8065" strokeWidth="1.5" />
       <rect x="122" y="334" width="160" height="24" rx="6" fill="#e8f5f1" stroke="#0d8065" strokeWidth="1.2" />
       <text x="152" y="351" fill="#095848" fontSize="9" fontWeight="600" fontFamily="system-ui, sans-serif">
-        Sur l’écran d’accueil
+        {addLabel}
       </text>
       <rect x="122" y="366" width="160" height="18" rx="4" fill="#f4f7f6" />
     </svg>
@@ -85,56 +96,47 @@ function IosInstallIllustration() {
 }
 
 export default function PwaInstallHelpPage() {
+  const { t } = useTranslation("pwa");
   return (
     <div className="settings pwa-install-help">
       <p className="breadcrumb">
-        <Link to="/parametres">Paramètres</Link>
+        <Link to="/parametres">{t("common:settings")}</Link>
         <span className="muted small" aria-hidden="true">
           {" "}
           /{" "}
         </span>
-        <span className="muted small">Installer l’app</span>
+        <span className="muted small">{t("breadcrumb")}</span>
       </p>
-      <h1>Installer Preppr sur votre téléphone</h1>
-      <p className="muted small">
-        Une fois installée, Preppr s’ouvre comme une application et reste utilisable hors ligne pour la liste de
-        courses (selon ce que votre navigateur a déjà mis en cache).
-      </p>
+      <h1>{t("title")}</h1>
+      <p className="muted small">{t("intro")}</p>
 
       <div className="pwa-help-grid">
         <figure className="card pwa-help-card">
           <figcaption className="pwa-help-caption">
-            <strong>Android (Chrome)</strong>
-            <span className="muted small">
-              Touchez le menu <strong>⋮</strong> en haut à droite, puis choisissez{" "}
-              <strong>Installer l’application</strong> ou <strong>Ajouter à l’écran d’accueil</strong> (selon la
-              version).
-            </span>
+            <strong>{t("androidTitle")}</strong>
+            <span className="muted small">{t("androidBody")}</span>
           </figcaption>
-          <AndroidInstallIllustration />
+          <AndroidInstallIllustration caption={t("androidCaption")} installLabel={t("androidInstall")} />
         </figure>
 
         <figure className="card pwa-help-card">
           <figcaption className="pwa-help-caption">
-            <strong>iPhone ou iPad (Safari)</strong>
-            <span className="muted small">
-              Touchez le bouton <strong>Partager</strong>{" "}
-              <span aria-hidden="true">(□↑)</span>, faites défiler si besoin, puis{" "}
-              <strong>Sur l’écran d’accueil</strong>.
-            </span>
+            <strong>{t("iosTitle")}</strong>
+            <span className="muted small">{t("iosBody")}</span>
           </figcaption>
-          <IosInstallIllustration />
+          <IosInstallIllustration
+            caption={t("iosCaption")}
+            shareLabel={t("iosShare")}
+            addLabel={t("iosAdd")}
+          />
         </figure>
       </div>
 
-      <p className="muted small">
-        Si vous ne voyez pas l’invite d’installation, vérifiez que vous ouvrez le site en{" "}
-        <strong>HTTPS</strong> et que vous utilisez bien Chrome (Android) ou Safari (iOS).
-      </p>
+      <p className="muted small">{t("httpsHint")}</p>
 
       <div className="row" style={{ marginTop: "1.25rem" }}>
         <Link to="/parametres" className="btn ghost">
-          Retour aux paramètres
+          {t("back")}
         </Link>
       </div>
     </div>

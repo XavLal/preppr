@@ -1,0 +1,46 @@
+{
+  "auth": {
+    "unauthenticated": "Not signed in",
+    "invalid_session": "Invalid session",
+    "missing_credentials": "Username and password are required.",
+    "invalid_login": "Invalid username.",
+    "invalid_credentials": "Incorrect username or password."
+  },
+  "state": {
+    "missing_body": "expectedVersion and state are required.",
+    "missing_version": "expectedVersion is required.",
+    "version_conflict": "Version conflict"
+  },
+  "shopping": {
+    "check_before_remove": "Check the item before removing it from the shopping list."
+  },
+  "recipe": {
+    "mark_cooked_before_remove": "Mark the recipe as cooked before removing it from the plan."
+  },
+  "import": {
+    "missing_json": "A json text field is required.",
+    "invalid_json": "Invalid JSON.",
+    "invalid_format": "Invalid file format."
+  },
+  "recipe_url": {
+    "missing": "A url parameter is required."
+  },
+  "not_found": "Not found",
+  "login_failed": "Could not sign in",
+  "invalid_response": "Invalid response",
+  "load_failed": "Could not load",
+  "save_failed": "Could not save",
+  "import_failed": "Could not import",
+  "delete_failed": "Could not delete",
+  "url_check_failed": "Could not check the URL",
+  "clear_shopping_failed": "Could not clear the list",
+  "offline_pending": "Offline — your changes will be sent when you are back online.",
+  "offline_cache": "Offline — showing the last cached data.",
+  "load_network": "Could not load data (network or server).",
+  "sync_first": "Sync the pending changes first.",
+  "online_required_clear_recipes": "A connection is required to delete all recipes.",
+  "clear_recipes_failed": "Could not delete all recipes.",
+  "online_required_clear_shopping": "A connection is required to clear the shopping list.",
+  "clear_shopping_list_failed": "Could not clear the shopping list.",
+  "generic": "Error"
+}

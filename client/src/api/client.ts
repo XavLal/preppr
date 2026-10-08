@@ -1,5 +1,17 @@
+import i18n from "@/i18n";
 import { getAuthToken } from "@/lib/authToken";
 import type { AppState } from "@/types";
+
+type ApiErrorBody = { error?: string; code?: string };
+
+function apiErrorMessage(data: ApiErrorBody | null | undefined, fallbackKey: string): string {
+  const code = data?.code;
+  if (code && i18n.exists(code, { ns: "errors" })) {
+    return i18n.t(code, { ns: "errors" });
+  }
+  if (data?.error) return data.error;
+  return i18n.t(fallbackKey, { ns: "errors" });
+}
 
 async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   const token = getAuthToken();
@@ -20,9 +32,13 @@ export async function apiLogin(body: {
     method: "POST",
     body: JSON.stringify(body),
   });
-  const data = (await res.json()) as { error?: string; token?: string; tenantSlug?: string; login?: string };
-  if (!res.ok) throw new Error(data.error ?? "Connexion impossible");
-  if (!data.token) throw new Error("Réponse invalide");
+  const data = (await res.json()) as ApiErrorBody & {
+    token?: string;
+    tenantSlug?: string;
+    login?: string;
+  };
+  if (!res.ok) throw new Error(apiErrorMessage(data, "login_failed"));
+  if (!data.token) throw new Error(apiErrorMessage(null, "invalid_response"));
   return {
     token: data.token,
     tenantSlug: data.tenantSlug!,
@@ -32,8 +48,8 @@ export async function apiLogin(body: {
 
 export async function apiGetState(): Promise<AppState> {
   const res = await apiFetch("/api/state");
-  const data = (await res.json()) as AppState & { error?: string };
-  if (!res.ok) throw new Error((data as { error?: string }).error ?? "Chargement impossible");
+  const data = (await res.json()) as AppState & ApiErrorBody;
+  if (!res.ok) throw new Error(apiErrorMessage(data, "load_failed"));
   return data as AppState;
 }
 
@@ -62,16 +78,16 @@ export async function apiPutState(
     method: "PUT",
     body: JSON.stringify({ expectedVersion, state }),
   });
-  const data = (await res.json()) as AppState & { error?: string; state?: AppState };
+  const data = (await res.json()) as AppState & ApiErrorBody & { state?: AppState };
   if (res.status === 409) {
     return {
       ok: false,
       conflict: conflictStateFromResponse(data),
-      message: data.error ?? "Conflit de version",
+      message: apiErrorMessage(data, "state.version_conflict"),
     };
   }
   if (!res.ok) {
-    throw new Error(data.error ?? "Enregistrement impossible");
+    throw new Error(apiErrorMessage(data, "save_failed"));
   }
   return { ok: true, state: data as AppState };
 }
@@ -81,8 +97,8 @@ export async function apiImportJson(jsonText: string): Promise<AppState> {
     method: "POST",
     body: JSON.stringify({ json: jsonText }),
   });
-  const data = (await res.json()) as AppState & { error?: string };
-  if (!res.ok) throw new Error(data.error ?? "Import impossible");
+  const data = (await res.json()) as AppState & ApiErrorBody;
+  if (!res.ok) throw new Error(apiErrorMessage(data, "import_failed"));
   return data as AppState;
 }
 
@@ -93,16 +109,16 @@ export async function apiClearRecipes(
     method: "POST",
     body: JSON.stringify({ expectedVersion }),
   });
-  const data = (await res.json()) as AppState & { error?: string; state?: AppState };
+  const data = (await res.json()) as AppState & ApiErrorBody & { state?: AppState };
   if (res.status === 409) {
     return {
       ok: false,
       conflict: conflictStateFromResponse(data),
-      message: data.error ?? "Conflit de version",
+      message: apiErrorMessage(data, "state.version_conflict"),
     };
   }
   if (!res.ok) {
-    throw new Error(data.error ?? "Suppression impossible");
+    throw new Error(apiErrorMessage(data, "delete_failed"));
   }
   return { ok: true, state: data as AppState };
 }
@@ -118,8 +134,8 @@ export async function apiCheckRecipeUrl(
     method: "POST",
     body: JSON.stringify({ url }),
   });
-  const data = (await res.json()) as RecipeUrlCheckResult & { error?: string };
-  if (!res.ok) throw new Error(data.error ?? "Vérification d’URL impossible");
+  const data = (await res.json()) as RecipeUrlCheckResult & ApiErrorBody;
+  if (!res.ok) throw new Error(apiErrorMessage(data, "url_check_failed"));
   if (data.determined === true && typeof data.status === "number") {
     return { determined: true, status: data.status };
   }
@@ -133,16 +149,16 @@ export async function apiClearShopping(
     method: "POST",
     body: JSON.stringify({ expectedVersion }),
   });
-  const data = (await res.json()) as AppState & { error?: string; state?: AppState };
+  const data = (await res.json()) as AppState & ApiErrorBody & { state?: AppState };
   if (res.status === 409) {
     return {
       ok: false,
       conflict: conflictStateFromResponse(data),
-      message: data.error ?? "Conflit de version",
+      message: apiErrorMessage(data, "state.version_conflict"),
     };
   }
   if (!res.ok) {
-    throw new Error(data.error ?? "Impossible de vider la liste");
+    throw new Error(apiErrorMessage(data, "clear_shopping_failed"));
   }
   return { ok: true, state: data as AppState };
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -30,6 +31,7 @@ function isLikelyMobile() {
 }
 
 export default function PwaInstallPrompt() {
+  const { t } = useTranslation("pwa");
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [dismissed, setDismissed] = useState(true);
   const [isInstalling, setIsInstalling] = useState(false);
@@ -90,24 +92,19 @@ export default function PwaInstallPrompt() {
 
   return (
     <aside className="pwa-install-banner card" aria-live="polite">
-      <p className="pwa-install-title">Installe Preppr sur votre mobile</p>
+      <p className="pwa-install-title">{t("bannerTitle")}</p>
       {canInstallDirectly ? (
-        <p className="muted small">
-          Accédez plus vite à vos recettes et utilisez la liste de courses comme une app.
-        </p>
+        <p className="muted small">{t("bannerAndroid")}</p>
       ) : (
-        <p className="muted small">
-          Sur iPhone, touchez <strong>Partager</strong> puis{" "}
-          <strong>Sur l&apos;écran d&apos;accueil</strong>.
-        </p>
+        <p className="muted small">{t("bannerIos")}</p>
       )}
       <div className="row end pwa-install-actions">
         <button type="button" className="btn ghost" onClick={dismiss}>
-          Plus tard
+          {t("later")}
         </button>
         {canInstallDirectly ? (
           <button type="button" className="btn primary" disabled={isInstalling} onClick={installApp}>
-            Installer
+            {t("install")}
           </button>
         ) : null}
       </div>

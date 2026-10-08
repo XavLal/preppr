@@ -1,10 +1,12 @@
 import { type FormEvent, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useAppStore } from "@/store/useAppStore";
 
 export default function DashboardPage() {
+  const { t } = useTranslation(["recipes", "common"]);
   const hydrate = useAppStore((s) => s.hydrate);
   const state = useAppStore((s) => s.state);
   const loading = useAppStore((s) => s.loading);
@@ -141,7 +143,7 @@ export default function DashboardPage() {
         sourceRecipeId: `manual-${id}`,
         weekId: null,
         title: manualTitle.trim(),
-        source: "Maison",
+        source: t("sourceHome"),
         url: manualUrl.trim() || null,
         basePortions: safePortions,
         prepTimeMinutes: safePrep,
@@ -152,7 +154,7 @@ export default function DashboardPage() {
         alreadyCooked: false,
         removedFromPlan: false,
         ingredients,
-        steps: steps.length > 0 ? steps : ["Préparer la recette."],
+        steps: steps.length > 0 ? steps : [t("defaultStep")],
       });
     });
     setManualBusy(false);
@@ -163,7 +165,7 @@ export default function DashboardPage() {
   }
 
   if (loading && !state) {
-    return <p className="muted">Chargement…</p>;
+    return <p className="muted">{t("common:loading")}</p>;
   }
 
   return (
@@ -176,26 +178,26 @@ export default function DashboardPage() {
 
       <div className="stats">
         <Link to="/" className="stat">
-          <span className="stat-label">À cuisiner</span>
+          <span className="stat-label">{t("toCook")}</span>
           <span className="stat-value">{toCook}</span>
         </Link>
         <Link to="/" className="stat">
-          <span className="stat-label">Déjà cuisiné</span>
+          <span className="stat-label">{t("cooked")}</span>
           <span className="stat-value">{cooked}</span>
         </Link>
         <Link to="/courses" className="stat">
-          <span className="stat-label">À acheter</span>
+          <span className="stat-label">{t("toBuy")}</span>
           <span className="stat-value">{toBuy}</span>
         </Link>
         <Link to="/courses" className="stat">
-          <span className="stat-label">Déjà acheté</span>
+          <span className="stat-label">{t("bought")}</span>
           <span className="stat-value">{bought}</span>
         </Link>
       </div>
 
       {active.length > 0 ? (
         <p className="muted small">
-          Réordonner les recettes : utilisez les flèches pour déplacer une recette dans la liste.
+          {t("reorderHint")}
         </p>
       ) : null}
 
@@ -204,13 +206,15 @@ export default function DashboardPage() {
           <li key={r.recipeInstanceId} className="recipe-card">
             <div className="recipe-card-head">
               <Link to={`/recette/${r.recipeInstanceId}`}>{r.title}</Link>
-              {r.isSpecialMeal ? <span className="pill">Spécial</span> : null}
+              {r.isSpecialMeal ? <span className="pill">{t("special")}</span> : null}
             </div>
             <p className="muted small">
               {r.source}
               {" · "}
-              {r.prepTimeMinutes} min prép.
-              {r.cookingTimeMinutes > 0 ? ` · ${r.cookingTimeMinutes} min cuisson` : ""}
+              {t("prepMinutes", { count: r.prepTimeMinutes })}
+              {r.cookingTimeMinutes > 0
+                ? ` · ${t("cookMinutes", { count: r.cookingTimeMinutes })}`
+                : ""}
               {r.tags.length ? ` · ${r.tags.join(", ")}` : ""}
             </p>
             <div className="row">
@@ -220,14 +224,14 @@ export default function DashboardPage() {
                   checked={r.alreadyCooked}
                   onChange={(e) => void toggleCooked(r.recipeInstanceId, e.target.checked)}
                 />
-                Déjà fait
+                {t("alreadyDone")}
               </label>
               <div className="row" style={{ gap: "0.25rem" }}>
                 <button
                   type="button"
                   className="btn icon ghost"
                   disabled={idx === 0}
-                  aria-label="Monter la recette"
+                  aria-label={t("moveUp")}
                   onClick={() => void moveRecipe(r.recipeInstanceId, -1)}
                 >
                   ↑
@@ -236,7 +240,7 @@ export default function DashboardPage() {
                   type="button"
                   className="btn icon ghost"
                   disabled={idx === active.length - 1}
-                  aria-label="Descendre la recette"
+                  aria-label={t("moveDown")}
                   onClick={() => void moveRecipe(r.recipeInstanceId, 1)}
                 >
                   ↓
@@ -246,14 +250,10 @@ export default function DashboardPage() {
                 type="button"
                 className="btn danger ghost"
                 disabled={!r.alreadyCooked}
-                title={
-                  r.alreadyCooked
-                    ? "Retirer de la planification"
-                    : "Cochez « Déjà fait » d’abord"
-                }
+                title={r.alreadyCooked ? t("removeTitle") : t("removeLocked")}
                 onClick={() => void removeRecipe(r.recipeInstanceId)}
               >
-                Retirer
+                {t("remove")}
               </button>
             </div>
           </li>
@@ -273,7 +273,7 @@ export default function DashboardPage() {
               lineHeight: "2",
             }}
           >
-            🍔 Générer mes menus
+            🍔 {t("generate")}
           </Link>
         </div>
       ) : null
@@ -285,45 +285,39 @@ export default function DashboardPage() {
 
       <footer className="page-footer">
         <Separator className="mb-[1.25rem]" />
-        <p className="muted small">
-          Ajoutez votre propre recette ou importez des recettes depuis un JSON formatté (IA).<br />
-          Les recettes sont ajoutées au plan et la liste de courses est recalculée ; les lignes manuelles restent.
-        </p>
+        <p className="muted small">{t("addHint")}</p>
         <button
           type="button"
           className="btn ghost mr-[0.5rem] mb-[1rem]"
           onClick={() => setManualOpen(true)}
         >
-          + Ajouter une recette manuellement
+          {t("addManual")}
         </button>
         <button
           type="button"
           className="btn primary mb-[1rem]"
           onClick={() => setImportOpen(true)}
         >
-          + Importer depuis un JSON
+          {t("importJson")}
         </button>
         <Separator className="mb-[1.25rem]" />
-        <p className="muted small">
-          Retire toutes les recettes du plan. La liste de courses est recalculée ; les lignes ajoutées
-          manuellement y restent.
-        </p>
+        <p className="muted small">{t("clearHint")}</p>
         <button
           type="button"
           className="btn danger ghost"
           disabled={!canBulkClearRecipes}
           title={
             !online
-              ? "Connexion requise"
+              ? t("common:connectionRequired")
               : pendingSync
-                ? "Synchronisation en attente"
+                ? t("common:syncPending")
                 : recipeCount === 0
-                  ? "Aucune recette"
+                  ? t("noRecipes")
                   : undefined
           }
           onClick={() => setClearRecipesOpen(true)}
         >
-          Supprimer toutes les recettes
+          {t("clearAll")}
         </button>
       </footer>
 
@@ -339,11 +333,8 @@ export default function DashboardPage() {
             }}
           >
             <div className="card modal" onClick={(e) => e.stopPropagation()}>
-              <h2 id="clear-recipes-title">Supprimer toutes les recettes ?</h2>
-              <p className="muted">
-                Toutes les recettes seront retirées du plan. La liste de courses sera mise à jour ;
-                les ingrédients saisis manuellement dans la liste seront conservés.
-              </p>
+              <h2 id="clear-recipes-title">{t("clearTitle")}</h2>
+              <p className="muted">{t("clearBody")}</p>
               <div className="row end">
                 <button
                   type="button"
@@ -351,7 +342,7 @@ export default function DashboardPage() {
                   disabled={clearRecipesBusy}
                   onClick={() => setClearRecipesOpen(false)}
                 >
-                  Annuler
+                  {t("common:cancel")}
                 </button>
                 <button
                   type="button"
@@ -359,7 +350,7 @@ export default function DashboardPage() {
                   disabled={clearRecipesBusy}
                   onClick={() => void confirmClearAllRecipes()}
                 >
-                  {clearRecipesBusy ? "Suppression…" : "Tout supprimer"}
+                  {clearRecipesBusy ? t("clearPending") : t("clearConfirm")}
                 </button>
               </div>
             </div>
@@ -371,10 +362,10 @@ export default function DashboardPage() {
         importOpen ? (
           <div className="modal-backdrop" role="dialog" aria-modal="true">
             <div className="card modal">
-              <h2>Importer des recettes</h2>
+              <h2>{t("importTitle")}</h2>
               <form onSubmit={onImport}>
                 <label className="field">
-                  <span>Coller le JSON</span>
+                  <span>{t("pasteJson")}</span>
                   <textarea
                     rows={12}
                     value={importText}
@@ -391,10 +382,10 @@ export default function DashboardPage() {
                       setImportText("");
                     }}
                   >
-                    Annuler
+                    {t("common:cancel")}
                   </button>
                   <button type="submit" className="btn primary" disabled={importBusy}>
-                    {importBusy ? "Import…" : "Importer"}
+                    {importBusy ? t("importPending") : t("import")}
                   </button>
                 </div>
               </form>
@@ -417,11 +408,11 @@ export default function DashboardPage() {
             }}
           >
             <div className="card modal" onClick={(e) => e.stopPropagation()}>
-              <h2 id="manual-recipe-title">Ajouter une recette manuellement</h2>
+              <h2 id="manual-recipe-title">{t("manualTitle")}</h2>
               <form onSubmit={submitManualRecipe} className="dashboard-manual-recipe-form">
                 <div className="field-grid">
                   <label className="field">
-                    <span>Titre</span>
+                    <span>{t("title")}</span>
                     <input
                       value={manualTitle}
                       onChange={(e) => setManualTitle(e.target.value)}
@@ -430,18 +421,18 @@ export default function DashboardPage() {
                     />
                   </label>
                   <label className="field">
-                    <span>URL</span>
+                    <span>{t("url")}</span>
                     <input
                       value={manualUrl}
                       onChange={(e) => setManualUrl(e.target.value)}
                       type="url"
-                      placeholder="https://… (optionnel)"
+                      placeholder={t("urlPlaceholder")}
                     />
                   </label>
                 </div>
                 <div className="field-grid">
                   <label className="field">
-                    <span>Portions</span>
+                    <span>{t("portions")}</span>
                     <input
                       type="number"
                       min={1}
@@ -452,7 +443,7 @@ export default function DashboardPage() {
                     />
                   </label>
                   <label className="field">
-                    <span>Temps de préparation (min)</span>
+                    <span>{t("prepTime")}</span>
                     <input
                       type="number"
                       min={0}
@@ -462,7 +453,7 @@ export default function DashboardPage() {
                     />
                   </label>
                   <label className="field">
-                    <span>Temps de cuisson (min)</span>
+                    <span>{t("cookTime")}</span>
                     <input
                       type="number"
                       min={0}
@@ -473,24 +464,22 @@ export default function DashboardPage() {
                   </label>
                 </div>
                 <label className="field">
-                  <span>Ingrédients</span>
+                  <span>{t("ingredients")}</span>
                   <textarea
                     rows={5}
                     value={manualIngredients}
                     onChange={(e) => setManualIngredients(e.target.value)}
-                    placeholder={"Une ligne par ingrédient, ex.:\n2 tomates\n200 g de pâtes"}
+                    placeholder={t("ingredientsPlaceholder")}
                   />
-                  <p className="muted small">
-                    Les quantités/étagères pourront être affinées plus tard dans la liste de courses.
-                  </p>
+                  <p className="muted small">{t("ingredientsHint")}</p>
                 </label>
                 <label className="field">
-                  <span>Étapes</span>
+                  <span>{t("steps")}</span>
                   <textarea
                     rows={6}
                     value={manualSteps}
                     onChange={(e) => setManualSteps(e.target.value)}
-                    placeholder={"Une ligne par étape, ex.:\nFaire chauffer le four…"}
+                    placeholder={t("stepsPlaceholder")}
                   />
                 </label>
                 <div className="row end">
@@ -502,10 +491,10 @@ export default function DashboardPage() {
                       setManualOpen(false);
                     }}
                   >
-                    Annuler
+                    {t("common:cancel")}
                   </button>
                   <button type="submit" className="btn primary" disabled={manualBusy}>
-                    {manualBusy ? "Ajout…" : "Ajouter la recette"}
+                    {manualBusy ? t("addPending") : t("addRecipe")}
                   </button>
                 </div>
               </form>

@@ -1,0 +1,21 @@
+{
+  "bannerTitle": "Installe Preppr sur votre mobile",
+  "bannerAndroid": "Accédez plus vite à vos recettes et utilisez la liste de courses comme une app.",
+  "bannerIos": "Sur iPhone, touchez Partager puis Sur l'écran d'accueil.",
+  "later": "Plus tard",
+  "install": "Installer",
+  "breadcrumb": "Installer l’app",
+  "title": "Installer Preppr sur votre téléphone",
+  "intro": "Une fois installée, Preppr s’ouvre comme une application et reste utilisable hors ligne pour la liste de courses (selon ce que votre navigateur a déjà mis en cache).",
+  "androidTitle": "Android (Chrome)",
+  "androidBody": "Touchez le menu ⋮ en haut à droite, puis choisissez Installer l’application ou Ajouter à l’écran d’accueil (selon la version).",
+  "androidCaption": "Schéma du menu Chrome sur Android avec l’option d’installation de l’application",
+  "androidInstall": "Installer l’app",
+  "iosTitle": "iPhone ou iPad (Safari)",
+  "iosBody": "Touchez le bouton Partager, faites défiler si besoin, puis Sur l’écran d’accueil.",
+  "iosCaption": "Schéma de Safari sur iPhone avec le bouton Partager et l’option Sur l’écran d’accueil",
+  "iosShare": "Partager",
+  "iosAdd": "Sur l’écran d’accueil",
+  "httpsHint": "Si vous ne voyez pas l’invite d’installation, vérifiez que vous ouvrez le site en HTTPS et que vous utilisez bien Chrome (Android) ou Safari (iOS).",
+  "back": "Retour aux paramètres"
+}

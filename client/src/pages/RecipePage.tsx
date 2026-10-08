@@ -6,8 +6,10 @@ import {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import RecipeSourceLink from "@/components/RecipeSourceLink";
+import { useCatalogLabels } from "@/i18n/labels";
 import { parseStepIngredientSegments } from "@/lib/enrichStepIngredients";
 import {
   roundDisplay,
@@ -17,6 +19,8 @@ import {
 import { useAppStore } from "@/store/useAppStore";
 
 export default function RecipePage() {
+  const { t } = useTranslation(["recipe", "common"]);
+  const { unitLabel } = useCatalogLabels();
   const { id } = useParams<{ id: string }>();
   const nav = useNavigate();
   const hydrate = useAppStore((s) => s.hydrate);
@@ -138,7 +142,7 @@ export default function RecipePage() {
   if (!recipe) {
     return (
       <p className="muted">
-        Recette introuvable. <Link to="/">Retour</Link>
+        {t("notFound")} <Link to="/">{t("back")}</Link>
       </p>
     );
   }
@@ -332,7 +336,7 @@ export default function RecipePage() {
       row.prepTimeMinutes = safePrep;
       row.cookingTimeMinutes = safeCook;
       row.ingredients = ingredients;
-      row.steps = steps.length > 0 ? steps : ["Préparer la recette."];
+      row.steps = steps.length > 0 ? steps : [t("defaultStep")];
 
       // Recalcule les lignes de courses dérivées (celles issues des recettes),
       // en préservant les lignes manuelles et l’état `checked` par identifiant.
@@ -418,7 +422,7 @@ export default function RecipePage() {
   return (
     <div>
       <p className="breadcrumb">
-        <Link to="/">← Recettes</Link>
+        <Link to="/">{t("backToRecipes")}</Link>
       </p>
       <header className="recipe-header">
         <h1>{recipeSafe.title}</h1>
@@ -432,19 +436,19 @@ export default function RecipePage() {
           />
         </p>
         <p className="muted small">
-          Temps de préparation : {recipeSafe.prepTimeMinutes} min
+          {t("prepTime", { count: recipeSafe.prepTimeMinutes })}
           {recipeSafe.cookingTimeMinutes > 0
-            ? ` · Temps de cuisson : ${recipeSafe.cookingTimeMinutes} min`
+            ? ` · ${t("cookTime", { count: recipeSafe.cookingTimeMinutes })}`
             : ""}
         </p>
         <div className="row wrap">
           <label className="field inline">
-            <span>Portions</span>
+            <span>{t("portions")}</span>
             <div className="portions-stepper">
               <button
                 type="button"
                 className="btn icon portions-stepper-btn"
-                aria-label="Diminuer les portions"
+                aria-label={t("decreasePortions")}
                 onClick={() => updatePortionsWithStep(-1)}
                 disabled={localPortions <= 1}
               >
@@ -471,7 +475,7 @@ export default function RecipePage() {
               <button
                 type="button"
                 className="btn icon portions-stepper-btn"
-                aria-label="Augmenter les portions"
+                aria-label={t("increasePortions")}
                 onClick={() => updatePortionsWithStep(1)}
                 disabled={localPortions >= 24}
               >
@@ -485,7 +489,7 @@ export default function RecipePage() {
               checked={recipeSafe.alreadyCooked}
               onChange={(e) => void setCooked(e.target.checked)}
             />
-            Déjà fait
+            {t("alreadyDone")}
           </label>
           <button
             type="button"
@@ -493,13 +497,13 @@ export default function RecipePage() {
             disabled={!recipe.alreadyCooked}
             onClick={() => void removeFromPlan()}
           >
-            Retirer de la planification
+            {t("removeFromPlan")}
           </button>
           <button
             type="button"
             className="btn icon ghost"
-            aria-label="Modifier la recette"
-            title="Modifier"
+            aria-label={t("editAria")}
+            title={t("edit")}
             disabled={editBusy}
             onClick={() => openEditModal()}
           >
@@ -510,7 +514,7 @@ export default function RecipePage() {
 
       <div className="recipe-split">
         <aside className="recipe-ingredients">
-          <h2>Ingrédients</h2>
+          <h2>{t("ingredients")}</h2>
           <ul>
             {recipeSafe.ingredients.map((ing) => (
               <li key={ing.name + ing.unit}>
@@ -521,7 +525,7 @@ export default function RecipePage() {
                     recipeSafe.basePortions,
                     portionsForDisplay
                   )}{" "}
-                  {ing.unit}
+                  {unitLabel(ing.unit)}
                 </strong>{" "}
                 {ing.name}
               </li>
@@ -529,7 +533,7 @@ export default function RecipePage() {
           </ul>
         </aside>
         <section className="recipe-steps">
-          <h2>Étapes</h2>
+          <h2>{t("steps")}</h2>
           <ol>
             {recipeSafe.steps.map((step, i) => (
               <li key={i}>
@@ -543,7 +547,7 @@ export default function RecipePage() {
                     <Fragment key={`${i}-${j}`}>{seg.text}</Fragment>
                   ) : (
                     <strong key={`${i}-${j}`}>
-                      {seg.quantity} {seg.unit} {seg.name}
+                      {seg.quantity} {unitLabel(seg.unit)} {seg.name}
                     </strong>
                   )
                 )}
@@ -567,14 +571,14 @@ export default function RecipePage() {
           }}
         >
           <div className="card modal" onClick={(e) => e.stopPropagation()}>
-            <h2 id="edit-recipe-title">Modifier la recette</h2>
+            <h2 id="edit-recipe-title">{t("editTitle")}</h2>
             <form
               onSubmit={submitEditRecipe}
               className="dashboard-manual-recipe-form"
             >
               <div className="field-grid">
                 <label className="field">
-                  <span>Titre</span>
+                  <span>{t("title")}</span>
                   <input
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
@@ -583,19 +587,19 @@ export default function RecipePage() {
                   />
                 </label>
                 <label className="field">
-                  <span>URL</span>
+                  <span>{t("url")}</span>
                   <input
                     value={editUrl}
                     onChange={(e) => setEditUrl(e.target.value)}
                     type="url"
-                    placeholder="https://… (optionnel)"
+                    placeholder={t("urlPlaceholder")}
                   />
                 </label>
               </div>
 
               <div className="field-grid">
                 <label className="field">
-                  <span>Portions</span>
+                  <span>{t("portions")}</span>
                   <input
                     type="number"
                     min={1}
@@ -606,7 +610,7 @@ export default function RecipePage() {
                   />
                 </label>
                 <label className="field">
-                  <span>Temps de préparation (min)</span>
+                  <span>{t("prepMinutes")}</span>
                   <input
                     type="number"
                     min={0}
@@ -616,7 +620,7 @@ export default function RecipePage() {
                   />
                 </label>
                 <label className="field">
-                  <span>Temps de cuisson (min)</span>
+                  <span>{t("cookMinutes")}</span>
                   <input
                     type="number"
                     min={0}
@@ -628,27 +632,23 @@ export default function RecipePage() {
               </div>
 
               <label className="field">
-                <span>Ingrédients</span>
+                <span>{t("ingredients")}</span>
                 <textarea
                   rows={5}
                   value={editIngredients}
                   onChange={(e) => setEditIngredients(e.target.value)}
-                  placeholder={
-                    "Une ligne par ingrédient (quantité + unité + nom), ex.:\n2 pièce tomates\n200 g de pâtes\n1 càs huile d'olive"
-                  }
+                  placeholder={t("ingredientsPlaceholder")}
                 />
-                <p className="muted small">
-                  Les quantités/unités sont sauvegardées telles quelles (pour éviter de fausser la recette).
-                </p>
+                <p className="muted small">{t("ingredientsHint")}</p>
               </label>
 
               <label className="field">
-                <span>Étapes</span>
+                <span>{t("steps")}</span>
                 <textarea
                   rows={6}
                   value={editSteps}
                   onChange={(e) => setEditSteps(e.target.value)}
-                  placeholder={"Une ligne par étape, préfixez avec « - », ex.:\n- Faire chauffer le four…"}
+                  placeholder={t("stepsPlaceholder")}
                 />
               </label>
 
@@ -662,10 +662,10 @@ export default function RecipePage() {
                     resetEditForm();
                   }}
                 >
-                  Annuler
+                  {t("common:cancel")}
                 </button>
                 <button type="submit" className="btn primary" disabled={editBusy}>
-                  {editBusy ? "Enregistrement…" : "Enregistrer la recette"}
+                  {editBusy ? t("saving") : t("save")}
                 </button>
               </div>
             </form>

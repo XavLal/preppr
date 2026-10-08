@@ -1,0 +1,37 @@
+{
+  "loading": "Chargement…",
+  "loadingData": "Chargement des données…",
+  "cancel": "Annuler",
+  "offline": "Hors ligne",
+  "offlineTitle": "Pas de connexion réseau",
+  "pendingSync": "À synchroniser",
+  "pendingSyncTitle": "Envoi des changements…",
+  "openMenu": "Ouvrir le menu",
+  "recipes": "Recettes",
+  "shopping": "Courses",
+  "assistant": "Assistant IA",
+  "settings": "Paramètres",
+  "logout": "Déconnexion",
+  "connectionRequired": "Connexion requise",
+  "syncPending": "Synchronisation en attente",
+  "moveUp": "Monter",
+  "moveDown": "Descendre",
+  "aisles": {
+    "fruitsLegumes": "Fruits & Légumes",
+    "viandesPoissons": "Viandes & Poissons",
+    "fraisLaitier": "Frais & Laitier",
+    "epicerieSalee": "Épicerie Salée",
+    "epicerieSucree": "Épicerie Sucrée",
+    "boulangerie": "Boulangerie",
+    "surgeles": "Surgelés",
+    "boissons": "Boissons",
+    "hygieneBeaute": "Hygiène & Beauté",
+    "divers": "Divers"
+  },
+  "units": {
+    "piece": "pièce",
+    "pinch": "pincée",
+    "tbsp": "càs",
+    "tsp": "càc"
+  }
+}

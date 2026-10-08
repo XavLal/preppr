@@ -1,0 +1,46 @@
+{
+  "auth": {
+    "unauthenticated": "Non authentifié",
+    "invalid_session": "Session invalide",
+    "missing_credentials": "Identifiant et mot de passe requis.",
+    "invalid_login": "Identifiant invalide.",
+    "invalid_credentials": "Identifiant ou mot de passe incorrect."
+  },
+  "state": {
+    "missing_body": "expectedVersion et state requis.",
+    "missing_version": "expectedVersion requis.",
+    "version_conflict": "Conflit de version"
+  },
+  "shopping": {
+    "check_before_remove": "Cochez l’article avant de le retirer de la liste de courses."
+  },
+  "recipe": {
+    "mark_cooked_before_remove": "Marquez la recette comme faite avant de la retirer de la planification."
+  },
+  "import": {
+    "missing_json": "Champ json (texte) requis.",
+    "invalid_json": "JSON invalide.",
+    "invalid_format": "Format de fichier invalide."
+  },
+  "recipe_url": {
+    "missing": "Paramètre url requis."
+  },
+  "not_found": "Introuvable",
+  "login_failed": "Connexion impossible",
+  "invalid_response": "Réponse invalide",
+  "load_failed": "Chargement impossible",
+  "save_failed": "Enregistrement impossible",
+  "import_failed": "Import impossible",
+  "delete_failed": "Suppression impossible",
+  "url_check_failed": "Vérification d’URL impossible",
+  "clear_shopping_failed": "Impossible de vider la liste",
+  "offline_pending": "Hors ligne — vos changements seront envoyés au retour du réseau.",
+  "offline_cache": "Hors ligne — affichage des dernières données en cache.",
+  "load_network": "Impossible de charger les données (réseau ou serveur).",
+  "sync_first": "Synchronisez d’abord les changements en attente.",
+  "online_required_clear_recipes": "Connexion requise pour supprimer toutes les recettes.",
+  "clear_recipes_failed": "Suppression de toutes les recettes impossible.",
+  "online_required_clear_shopping": "Connexion requise pour vider la liste de courses.",
+  "clear_shopping_list_failed": "Impossible de vider la liste de courses.",
+  "generic": "Erreur"
+}

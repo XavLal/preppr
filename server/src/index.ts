@@ -44,13 +44,13 @@ function parseAuth(
 ): JwtPayload | undefined {
   const h = req.headers.authorization;
   if (!h?.startsWith("Bearer ")) {
-    reply.status(401).send({ error: "Non authentifié" });
+    reply.status(401).send({ error: "Non authentifié", code: "auth.unauthenticated" });
     return undefined;
   }
   try {
     return verifyToken(h.slice(7));
   } catch {
-    reply.status(401).send({ error: "Session invalide" });
+    reply.status(401).send({ error: "Session invalide", code: "auth.invalid_session" });
     return undefined;
   }
 }
@@ -71,24 +71,33 @@ app.post("/api/auth/login", async (req, reply) => {
   const login = body.login?.trim();
   const password = body.password ?? "";
   if (!login || !password) {
-    return reply.status(400).send({ error: "Identifiant et mot de passe requis." });
+    return reply.status(400).send({
+      error: "Identifiant et mot de passe requis.",
+      code: "auth.missing_credentials",
+    });
   }
   let slug: string;
   try {
     slug = tenantSlugFromLogin(login);
   } catch {
-    return reply.status(400).send({ error: "Identifiant invalide." });
+    return reply.status(400).send({ error: "Identifiant invalide.", code: "auth.invalid_login" });
   }
   const accounts = await loadAccounts();
   const user = accounts.users.find(
     (u) => u.login.toLowerCase() === login.toLowerCase()
   );
   if (!user) {
-    return reply.status(401).send({ error: "Identifiant ou mot de passe incorrect." });
+    return reply.status(401).send({
+      error: "Identifiant ou mot de passe incorrect.",
+      code: "auth.invalid_credentials",
+    });
   }
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) {
-    return reply.status(401).send({ error: "Identifiant ou mot de passe incorrect." });
+    return reply.status(401).send({
+      error: "Identifiant ou mot de passe incorrect.",
+      code: "auth.invalid_credentials",
+    });
   }
   const token = signToken({ sub: slug, login: user.login }, Boolean(body.rememberMe));
   return { token, tenantSlug: slug, login: user.login };
@@ -106,12 +115,16 @@ app.put("/api/state", async (req, reply) => {
   if (!auth) return;
   const body = req.body as { expectedVersion?: number; state?: AppState };
   if (body.expectedVersion === undefined || !body.state) {
-    return reply.status(400).send({ error: "expectedVersion et state requis." });
+    return reply.status(400).send({
+      error: "expectedVersion et state requis.",
+      code: "state.missing_body",
+    });
   }
   const prev = await loadState(auth.sub);
   if (prev.version !== body.expectedVersion) {
     return reply.status(409).send({
       error: "Conflit de version",
+      code: "state.version_conflict",
       state: prev,
     });
   }
@@ -126,7 +139,7 @@ app.put("/api/state", async (req, reply) => {
     validateRecipesRemoved(prev, nextRaw);
   } catch (e) {
     if (e instanceof StateValidationError) {
-      return reply.status(400).send({ error: e.message });
+      return reply.status(400).send({ error: e.message, code: e.code });
     }
     throw e;
   }
@@ -139,12 +152,16 @@ app.post("/api/clear-recipes", async (req, reply) => {
   if (!auth) return;
   const body = req.body as { expectedVersion?: number };
   if (body.expectedVersion === undefined) {
-    return reply.status(400).send({ error: "expectedVersion requis." });
+    return reply.status(400).send({
+      error: "expectedVersion requis.",
+      code: "state.missing_version",
+    });
   }
   const prev = await loadState(auth.sub);
   if (prev.version !== body.expectedVersion) {
     return reply.status(409).send({
       error: "Conflit de version",
+      code: "state.version_conflict",
       state: prev,
     });
   }
@@ -165,12 +182,16 @@ app.post("/api/clear-shopping", async (req, reply) => {
   if (!auth) return;
   const body = req.body as { expectedVersion?: number };
   if (body.expectedVersion === undefined) {
-    return reply.status(400).send({ error: "expectedVersion requis." });
+    return reply.status(400).send({
+      error: "expectedVersion requis.",
+      code: "state.missing_version",
+    });
   }
   const prev = await loadState(auth.sub);
   if (prev.version !== body.expectedVersion) {
     return reply.status(409).send({
       error: "Conflit de version",
+      code: "state.version_conflict",
       state: prev,
     });
   }
@@ -190,7 +211,7 @@ app.post("/api/recipe-url-check", async (req, reply) => {
   const body = req.body as { url?: string };
   const raw = typeof body.url === "string" ? body.url.trim() : "";
   if (!raw) {
-    return reply.status(400).send({ error: "Paramètre url requis." });
+    return reply.status(400).send({ error: "Paramètre url requis.", code: "recipe_url.missing" });
   }
   if (!isAllowlistedRecipeUrl(raw)) {
     return { determined: false as const };
@@ -207,18 +228,22 @@ app.post("/api/import", async (req, reply) => {
   if (!auth) return;
   const body = req.body as { json?: string };
   if (!body.json || typeof body.json !== "string") {
-    return reply.status(400).send({ error: "Champ json (texte) requis." });
+    return reply.status(400).send({
+      error: "Champ json (texte) requis.",
+      code: "import.missing_json",
+    });
   }
   let parsed: unknown;
   try {
     parsed = JSON.parse(body.json);
   } catch {
-    return reply.status(400).send({ error: "JSON invalide." });
+    return reply.status(400).send({ error: "JSON invalide.", code: "import.invalid_json" });
   }
   const parsedRes = importPayloadSchema.safeParse(parsed);
   if (!parsedRes.success) {
     return reply.status(400).send({
       error: "Format de fichier invalide.",
+      code: "import.invalid_format",
       details: parsedRes.error.flatten(),
     });
   }
@@ -280,7 +305,7 @@ if (staticDir) {
     if (req.method === "GET" && !req.url.startsWith("/api")) {
       return reply.sendFile("index.html");
     }
-    return reply.status(404).send({ error: "Not found" });
+    return reply.status(404).send({ error: "Not found", code: "not_found" });
   });
 }
 

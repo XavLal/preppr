@@ -1,5 +1,7 @@
 import { type DragEvent, type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useCatalogLabels } from "@/i18n/labels";
 import { Separator } from "@/components/ui/separator";
 import {
   moveLineStepInAisle,
@@ -17,6 +19,8 @@ import { SHOP_UNITS, unitForSelect } from "@/lib/shopUnits";
 import type { ShoppingLine } from "@/types";
 
 export default function ShoppingPage() {
+  const { t, i18n } = useTranslation(["shopping", "common"]);
+  const { aisleLabel, unitLabel } = useCatalogLabels();
   const hydrate = useAppStore((s) => s.hydrate);
   const state = useAppStore((s) => s.state);
   const error = useAppStore((s) => s.error);
@@ -255,19 +259,19 @@ export default function ShoppingPage() {
   }
 
   if (!state) {
-    return <p className="muted">Chargement…</p>;
+    return <p className="muted">{t("common:loading")}</p>;
   }
 
-  const printGeneratedAt = new Date().toLocaleString("fr-FR", {
+  const printGeneratedAt = new Date().toLocaleString(i18n.language, {
     dateStyle: "medium",
     timeStyle: "short",
   });
 
   return (
     <div className="shopping-page">
-      <h1>Liste de courses</h1>
+      <h1>{t("title")}</h1>
       <p className="muted small shop-print-generated shop-print-only">
-        Généré le {printGeneratedAt}
+        {t("printedAt", { date: printGeneratedAt })}
       </p>
 
       {error ? (
@@ -278,21 +282,19 @@ export default function ShoppingPage() {
 
       <div className="toolbar shop-toolbar">
         <button type="button" className="btn primary" onClick={openAddModal}>
-          Ajouter un ingrédient
+          {t("addIngredient")}
         </button>
         <button
           type="button"
           className="btn ghost shop-toolbar-print"
           disabled={lineCount === 0}
-          title={lineCount === 0 ? "Liste vide" : undefined}
+          title={lineCount === 0 ? t("emptyList") : undefined}
           onClick={() => window.print()}
         >
-          Imprimer
+          {t("print")}
         </button>
       </div>
-      <p className="muted small shop-reorder-hint">
-        Dans un même rayon : poignée ⋮ pour glisser-déposer, ou flèches pour déplacer d’une ligne.
-      </p>
+      <p className="muted small shop-reorder-hint">{t("reorderHint")}</p>
 
       {modalOpen ? (
         <div
@@ -306,11 +308,11 @@ export default function ShoppingPage() {
         >
           <div className="card modal" onClick={(e) => e.stopPropagation()}>
             <h2 id="ingredient-form-title">
-              {isEdit ? "Modifier l’ingrédient" : "Ajouter un ingrédient"}
+              {isEdit ? t("editIngredient") : t("addIngredientTitle")}
             </h2>
             <form onSubmit={submitForm} className="shop-ingredient-form">
               <label className="field">
-                <span>Nom</span>
+                <span>{t("name")}</span>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -320,7 +322,7 @@ export default function ShoppingPage() {
               </label>
               {showAisleField ? (
                 <label className="field">
-                  <span>Rayon</span>
+                  <span>{t("aisle")}</span>
                   <select
                     value={aisle}
                     onChange={(e) => setAisle(e.target.value)}
@@ -328,21 +330,21 @@ export default function ShoppingPage() {
                   >
                     {SHOP_AISLES.map((a) => (
                       <option key={a} value={a}>
-                        {a}
+                        {aisleLabel(a)}
                       </option>
                     ))}
                   </select>
                 </label>
               ) : (
                 <p className="muted small shop-form-aisle-hint">
-                  Rayon : <strong>{aisle}</strong>
+                  {t("aisleLocked")} <strong>{aisleLabel(aisle)}</strong>
                 </p>
               )}
               <div className="field field-qty-unit">
-                <span>Quantité et unité</span>
+                <span>{t("qtyUnit")}</span>
                 <div className="qty-unit-row">
                   <label className="sr-only" htmlFor="shop-form-qty">
-                    Quantité
+                    {t("quantity")}
                   </label>
                   <input
                     id="shop-form-qty"
@@ -352,7 +354,7 @@ export default function ShoppingPage() {
                     inputMode="decimal"
                   />
                   <label className="sr-only" htmlFor="shop-form-unit">
-                    Unité
+                    {t("unit")}
                   </label>
                   <select
                     id="shop-form-unit"
@@ -363,7 +365,7 @@ export default function ShoppingPage() {
                   >
                     {SHOP_UNITS.map((u) => (
                       <option key={u} value={u}>
-                        {u}
+                        {unitLabel(u)}
                       </option>
                     ))}
                   </select>
@@ -371,16 +373,16 @@ export default function ShoppingPage() {
               </div>
               <div className="row end">
                 <button type="button" className="btn ghost" onClick={closeModal}>
-                  Annuler
+                  {t("common:cancel")}
                 </button>
                 <button type="submit" className="btn primary" disabled={formBusy}>
                   {formBusy
                     ? isEdit
-                      ? "Enregistrement…"
-                      : "Ajout…"
+                      ? t("saving")
+                      : t("adding")
                     : isEdit
-                      ? "Enregistrer"
-                      : "Ajouter"}
+                      ? t("save")
+                      : t("add")}
                 </button>
               </div>
             </form>
@@ -391,12 +393,12 @@ export default function ShoppingPage() {
       {grouped.map(([aisleName, lines]) => (
         <section key={aisleName} className="aisle-block">
           <div className="aisle-block-head">
-            <h2>{aisleName}</h2>
+            <h2>{aisleLabel(aisleName)}</h2>
             <button
               type="button"
               className="btn aisle-add-btn"
-              aria-label={`Ajouter un produit dans ${aisleName}`}
-              title="Ajouter dans ce rayon"
+              aria-label={t("addInAisle", { aisle: aisleLabel(aisleName) })}
+              title={t("addInThisAisle")}
               onClick={() => openAddModalForAisle(aisleName)}
             >
               +
@@ -422,8 +424,8 @@ export default function ShoppingPage() {
                   <span
                     className="shop-drag-handle"
                     draggable={!l.checked}
-                    title="Glisser pour réordonner dans ce rayon"
-                    aria-label={`Réordonner ${l.name}`}
+                    title={t("dragReorder")}
+                    aria-label={t("reorderItem", { name: l.name })}
                     onDragStart={(e) => onDragStartLine(e, l.id)}
                     onDragEnd={() => {
                       setDraggingLineId(null);
@@ -454,18 +456,18 @@ export default function ShoppingPage() {
                     type="button"
                     className="shop-line-edit"
                     onClick={() => openEditModal(l)}
-                    aria-label={`Modifier ${l.name}`}
+                    aria-label={t("editItem", { name: l.name })}
                   >
                     <span className="shop-line-qty">
                       <strong>
-                        {l.quantity} {l.unit}
+                        {l.quantity} {unitLabel(l.unit)}
                       </strong>
                     </span>
                     <span className="shop-line-name">{l.name}</span>
                     {l.extraIngredient ? (
-                      <span className="pill pill-extra">Hors recette</span>
+                      <span className="pill pill-extra">{t("extra")}</span>
                     ) : l.manual ? (
-                      <span className="pill">Manuel</span>
+                      <span className="pill">{t("manual")}</span>
                     ) : null}
                   </button>
                 </div>
@@ -474,13 +476,13 @@ export default function ShoppingPage() {
                     <div
                       className="shop-reorder-btns"
                       role="group"
-                      aria-label={`Position dans ${aisleName}`}
+                      aria-label={t("positionIn", { aisle: aisleLabel(aisleName) })}
                     >
                       <button
                         type="button"
                         className="btn icon ghost"
                         disabled={idx === 0}
-                        aria-label={`Monter ${l.name}`}
+                        aria-label={t("moveUp", { name: l.name })}
                         onClick={() => void moveInAisle(aisleName, l.id, -1)}
                       >
                         ↑
@@ -489,7 +491,7 @@ export default function ShoppingPage() {
                         type="button"
                         className="btn icon ghost"
                         disabled={idx === lines.length - 1}
-                        aria-label={`Descendre ${l.name}`}
+                        aria-label={t("moveDown", { name: l.name })}
                         onClick={() => void moveInAisle(aisleName, l.id, 1)}
                       >
                         ↓
@@ -500,10 +502,10 @@ export default function ShoppingPage() {
                     type="button"
                     className="btn ghost danger"
                     disabled={!l.checked}
-                    title={l.checked ? "Retirer de la liste" : "Cochez l’article d’abord"}
+                    title={l.checked ? t("removeTitle") : t("removeLocked")}
                     onClick={() => void removeLine(l.id)}
                   >
-                    Retirer
+                    {t("remove")}
                   </button>
                 </div>
               </li>
@@ -514,21 +516,16 @@ export default function ShoppingPage() {
 
       <footer className="page-footer">
         <Separator className="mb-[1.25rem]" />
-        <p className="muted small">
-          Retirez d’un coup les articles déjà cochés, ou videz entièrement la liste. Les recettes et
-          leurs ingrédients ne sont pas modifiés.
-        </p>
+        <p className="muted small">{t("footerHint")}</p>
         <div className="shop-footer-actions">
           <button
             type="button"
             className="btn ghost"
             disabled={!canRemoveBought}
-            title={
-              boughtLineCount === 0 ? "Aucun article coché" : undefined
-            }
+            title={boughtLineCount === 0 ? t("noneChecked") : undefined}
             onClick={() => setRemoveBoughtOpen(true)}
           >
-            Retirer les articles cochés
+            {t("removeChecked")}
           </button>
           <button
             type="button"
@@ -536,16 +533,16 @@ export default function ShoppingPage() {
             disabled={!canBulkClearShopping}
             title={
               !online
-                ? "Connexion requise"
+                ? t("common:connectionRequired")
                 : pendingSync
-                  ? "Synchronisation en attente"
+                  ? t("common:syncPending")
                   : lineCount === 0
-                    ? "Liste déjà vide"
+                    ? t("alreadyEmpty")
                     : undefined
             }
             onClick={() => setClearShoppingOpen(true)}
           >
-            Vider toute la liste
+            {t("clearAll")}
           </button>
         </div>
       </footer>
@@ -561,11 +558,8 @@ export default function ShoppingPage() {
           }}
         >
           <div className="card modal" onClick={(e) => e.stopPropagation()}>
-            <h2 id="remove-bought-title">Retirer les articles cochés ?</h2>
-            <p className="muted">
-              Les lignes cochées seront supprimées de la liste. Les articles non cochés restent ; les
-              recettes ne sont pas modifiées.
-            </p>
+            <h2 id="remove-bought-title">{t("removeCheckedTitle")}</h2>
+            <p className="muted">{t("removeCheckedBody")}</p>
             <div className="row end">
               <button
                 type="button"
@@ -573,7 +567,7 @@ export default function ShoppingPage() {
                 disabled={removeBoughtBusy}
                 onClick={() => setRemoveBoughtOpen(false)}
               >
-                Annuler
+                {t("common:cancel")}
               </button>
               <button
                 type="button"
@@ -581,7 +575,7 @@ export default function ShoppingPage() {
                 disabled={removeBoughtBusy}
                 onClick={() => void confirmRemoveBoughtLines()}
               >
-                {removeBoughtBusy ? "Retrait…" : "Retirer les cochés"}
+                {removeBoughtBusy ? t("removing") : t("removeCheckedConfirm")}
               </button>
             </div>
           </div>
@@ -599,11 +593,8 @@ export default function ShoppingPage() {
           }}
         >
           <div className="card modal" onClick={(e) => e.stopPropagation()}>
-            <h2 id="clear-shopping-title">Vider toute la liste ?</h2>
-            <p className="muted">
-              Toute la liste sera vidée. Le détail des ingrédients dans chaque recette reste inchangé ;
-              un nouvel import pourra à nouveau remplir la liste.
-            </p>
+            <h2 id="clear-shopping-title">{t("clearTitle")}</h2>
+            <p className="muted">{t("clearBody")}</p>
             <div className="row end">
               <button
                 type="button"
@@ -611,7 +602,7 @@ export default function ShoppingPage() {
                 disabled={clearShoppingBusy}
                 onClick={() => setClearShoppingOpen(false)}
               >
-                Annuler
+                {t("common:cancel")}
               </button>
               <button
                 type="button"
@@ -619,7 +610,7 @@ export default function ShoppingPage() {
                 disabled={clearShoppingBusy}
                 onClick={() => void confirmClearAllShopping()}
               >
-                {clearShoppingBusy ? "Vidage…" : "Tout vider"}
+                {clearShoppingBusy ? t("clearing") : t("clearConfirm")}
               </button>
             </div>
           </div>
