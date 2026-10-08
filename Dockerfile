@@ -16,6 +16,7 @@ ENV DATA_DIR=/data
 ENV CLIENT_DIST=/app/static
 COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/server/package.json ./server/package.json
 COPY --from=build /app/server/dist ./server/dist
 COPY --from=build /app/client/dist ./static
 EXPOSE 3000

@@ -1,86 +1,57 @@
 # Preppr
 
-Application familiale : import de recettes au format JSON (généré par l’IA), planification, liste de courses par rayon, synchronisation via API (polling), comptes par famille (login / mot de passe).
+Preppr est une application familiale pour planifier les repas et faire les courses.
 
-Le JSON d’import contient `weekId`, un tableau `recipes` (comme décrit par l’IA) et optionnellement **`extraIngredients`** : liste d’objets `{ name, quantity, unit, aisle }` pour des articles **hors recettes** (ex. papier toilette). Ces lignes sont ajoutées à la liste de courses avec le repère « Hors recette ».
+On compose les menus avec un assistant (Google Gemini ou Anthropic Claude), ou on importe un fichier JSON. Les recettes et la liste de courses, regroupée par rayon, sont partagées par toutes les personnes connectées avec le même compte. La liste de courses reste utilisable sans réseau, puis se synchronise au retour de la connexion.
 
-## Prérequis
+Il n’y a pas d’inscription dans l’interface. La personne qui installe Preppr crée le compte famille une fois, puis partage l’adresse et les identifiants avec le foyer.
 
-- Node.js 22+
+## Démarrer avec Docker
 
-## Installation
+C’est le chemin le plus simple. Il faut [Docker](https://docs.docker.com/get-docker/) avec Docker Compose. Node.js n’est pas nécessaire.
 
-```bash
-npm install
-```
-
-## Créer un compte famille
+À la racine du projet, créez un fichier `.env` (il n’est pas versionné) :
 
 ```bash
-npm run add-user -w server -- mon-identifiant mon-mot-de-passe
+echo "JWT_SECRET=$(openssl rand -hex 32)" > .env
 ```
 
-(`npm run add-user -w server` sans arguments : mode interactif.)
+Puis lancez l’application :
+
+```bash
+docker compose up --build -d
+```
+
+Ouvrez [http://localhost:3000](http://localhost:3000).
+
+Créez le compte famille. L’identifiant accepte lettres, chiffres et tirets. Le mot de passe fait au moins 4 caractères. Le mode interactif évite de laisser le mot de passe dans l’historique du terminal :
+
+```bash
+docker compose exec -it app node server/dist/cli/add-user.js
+```
+
+Connectez-vous dans le navigateur avec ces identifiants. La case **Se souvenir de moi** garde la session 30 jours ; sans elle, la session dure 8 heures.
+
+La suite se passe dans l’application : [guide d’utilisation](docs/utilisation.md).
+
+Les données (comptes, recettes, liste, clés d’API) sont dans le volume Docker `preppr-data`. Elles survivent à un redémarrage du conteneur.
+
+## Documentation
+
+| Document | Pour qui |
+| --- | --- |
+| [Installation](docs/installation.md) | Docker, Node.js en local, variables, sauvegardes, mises à jour |
+| [Utilisation](docs/utilisation.md) | Connexion, menus, recettes, courses, téléphone, hors ligne |
+| [Format JSON](docs/format-json.md) | Importer des recettes collées depuis une autre IA |
 
 ## Développement
 
-Terminal 1 — API (port **3001**) :
-
-```bash
-npm run dev -w server
-```
-
-Terminal 2 — interface Vite (proxy `/api` → 3001) :
-
-```bash
-npm run dev -w client
-```
-
-Ou les deux :
+Node.js 22 ou plus récent.
 
 ```bash
 npm install
+npm run add-user -w server -- famille mot-de-passe
 npm run dev
 ```
 
-Ouvrir http://localhost:5173
-
-Variables utiles côté serveur :
-
-- `JWT_SECRET` — secret de signature des jetons (obligatoire en production)
-- `PORT` — défaut `3001`
-- `DATA_DIR` — dossier des données (défaut : `./data` depuis le répertoire de travail du processus)
-
-## Production (build local)
-
-```bash
-npm run build
-cd server
-CLIENT_DIST=../client/dist JWT_SECRET=dev node dist/index.js
-```
-
-L’app est servie sur le port `PORT` (défaut **3001**), avec le frontend sur la même origine.
-
-## Docker
-
-```bash
-export JWT_SECRET=$(openssl rand -hex 32)
-docker compose up --build
-```
-
-Données dans le volume `preppr-data` monté sur `/data`.
-
-## Hors ligne & PWA
-
-- **IndexedDB** : dernière copie de l’état par famille (clé = `sub` du JWT) ; en cas d’échec du chargement, affichage du cache.
-- **Liste de courses** : en l’absence de réseau (ou si l’API échoue), les changements sont enregistrés localement puis **synchronisés** au retour en ligne (fusion : courses + portions cibles si le serveur a une version plus récente).
-- **PWA** : `npm run build` génère un **service worker** (précache des assets). En production, servir le build avec le serveur Node (`CLIENT_DIST`) pour une seule origine.
-- Développement : `vite-plugin-pwa` a `devOptions.enabled: false` ; tester le SW via `npm run build && npm run preview -w client`.
-
-## Prochaines étapes possibles
-
-- Déduplication à l’import, outil « nouvelle semaine »
-- File d’attente détaillée par opération (au-delà du snapshot + fusion actuelle)
-- Analyse nutritionnelle des plats (https://fr.openfoodfacts.org)
-- Sauvegarde des recettes en local avec formattage https://cooklang.org/
-- API Intermarché pour le drive
+L’interface est sur [http://localhost:5173](http://localhost:5173), l’API sur le port 3001. Le détail est dans le [guide d’installation](docs/installation.md).

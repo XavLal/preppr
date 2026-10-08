@@ -496,7 +496,7 @@ export default function MenuGenerator() {
           }}
         >
           Aucune clé API {activeLlm === "claude" ? "Claude (Anthropic)" : "Gemini (Google)"} configurée.{" "}
-          <a href="/settings">Configurez-la dans les Paramètres.</a>
+          <a href="/parametres">Configurez-la dans les Paramètres.</a>
         </p>
       ) : null}
       {importStatus ? (
