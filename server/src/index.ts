@@ -1,19 +1,43 @@
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
-import bcrypt from "bcrypt";
 import staticPlugin from "@fastify/static";
 import jwt from "jsonwebtoken";
 import path from "path";
 import { fileURLToPath } from "url";
 import { randomUUID } from "node:crypto";
+import { z } from "zod";
+import {
+  AccountError,
+  changePassword,
+  changePasswordSchema,
+  createMember,
+  credentialsSchema,
+  findBySlug,
+  listAccounts,
+  needsSetup,
+  readAccounts,
+  resetPassword,
+  resetPasswordSchema,
+  setupOwner,
+  toPublicAccount,
+  verifyCredentials,
+} from "./lib/accounts.js";
 import { importPayloadSchema } from "./lib/schemas.js";
-import { tenantSlugFromLogin } from "./lib/slug.js";
 import {
   isAllowlistedRecipeUrl,
   probeRecipeUrlHttpStatus,
 } from "./lib/recipeUrlCheck.js";
 import { coerceAppState } from "./lib/coerceAppState.js";
-import { loadAccounts, loadState, saveState } from "./lib/storage.js";
+import {
+  clearSetupToken,
+  ensureSetupToken,
+  readSetupToken,
+  resolveJwtSecret,
+  resolveStaticDir,
+  safeEqual,
+} from "./lib/config.js";
+import { RateLimiter } from "./lib/rateLimit.js";
+import { AccountsFileError, loadState, restrictDataPermissions, saveState, type AccountUser } from "./lib/storage.js";
 import { mergeImportedRecipesIntoShoppingLines } from "./lib/shopping.js";
 import {
   validateStateTransition,
@@ -24,13 +48,34 @@ import type { AppState, ShoppingLine, StoredRecipe } from "./lib/types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret-change-me";
+process.umask(0o077);
+const JWT_SECRET = await resolveJwtSecret();
+await restrictDataPermissions();
 const PORT = Number(process.env.PORT ?? 3001);
 
-type JwtPayload = { sub: string; login: string };
+/** `sv` absent : jeton émis avant les versions de session, équivaut à 0. */
+type JwtPayload = {
+  sub: string;
+  login: string;
+  sv?: number;
+  long?: boolean;
+  iat?: number;
+  exp?: number;
+};
 
-function signToken(payload: JwtPayload, longLived: boolean): string {
+function isLongLived(p: JwtPayload): boolean {
+  if (typeof p.long === "boolean") return p.long;
+  return p.exp !== undefined && p.iat !== undefined && p.exp - p.iat > 24 * 3600;
+}
+
+function signToken(user: AccountUser, longLived: boolean): string {
   const expiresIn = longLived ? "30d" : "8h";
+  const payload: JwtPayload = {
+    sub: user.tenantSlug,
+    login: user.login,
+    sv: user.sessionVersion,
+    long: longLived,
+  };
   return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
 
@@ -38,80 +83,226 @@ function verifyToken(token: string): JwtPayload {
   return jwt.verify(token, JWT_SECRET) as JwtPayload;
 }
 
-function parseAuth(
+async function parseAuth(
   req: FastifyRequest,
   reply: FastifyReply
-): JwtPayload | undefined {
+): Promise<JwtPayload | undefined> {
   const h = req.headers.authorization;
   if (!h?.startsWith("Bearer ")) {
     reply.status(401).send({ error: "Non authentifié", code: "auth.unauthenticated" });
     return undefined;
   }
+  let payload: JwtPayload;
   try {
-    return verifyToken(h.slice(7));
+    payload = verifyToken(h.slice(7));
   } catch {
     reply.status(401).send({ error: "Session invalide", code: "auth.invalid_session" });
     return undefined;
   }
+  const user = findBySlug(await readAccounts(), payload.sub);
+  if (!user || user.sessionVersion !== (payload.sv ?? 0)) {
+    reply.status(401).send({ error: "Session invalide", code: "auth.invalid_session" });
+    return undefined;
+  }
+  return payload;
 }
 
-const app = Fastify({ logger: true });
+function sendAccountError(reply: FastifyReply, e: unknown) {
+  if (e instanceof AccountError) {
+    return reply.status(e.status).send({ error: e.message, code: e.code });
+  }
+  throw e;
+}
 
-await app.register(cors, {
-  origin: true,
-  credentials: true,
-});
+function sessionResponse(user: AccountUser, longLived: boolean) {
+  return {
+    token: signToken(user, longLived),
+    tenantSlug: user.tenantSlug,
+    login: user.login,
+    role: user.role,
+  };
+}
+
+const missingCredentials = {
+  error: "Identifiant et mot de passe requis.",
+  code: "auth.missing_credentials",
+};
+
+try {
+  await readAccounts();
+} catch (e) {
+  if (e instanceof AccountsFileError) {
+    console.error(e.message);
+    process.exit(1);
+  }
+  throw e;
+}
+
+const needsInitialAccount = await needsSetup();
+const setupToken = needsInitialAccount ? await ensureSetupToken() : null;
+if (!needsInitialAccount) await clearSetupToken();
+
+const app = Fastify({ logger: true });
+const limiter = new RateLimiter();
+const RATE_WINDOW_MS = 15 * 60 * 1000;
+
+if (setupToken) {
+  app.log.info(`Code d'installation Preppr : ${setupToken}`);
+}
+
+if (process.env.NODE_ENV !== "production") {
+  await app.register(cors, {
+    origin: true,
+    credentials: true,
+  });
+}
+
+function rejectIfLimited(reply: FastifyReply, key: string, limit: number): boolean {
+  if (!limiter.isBlocked(key, limit, RATE_WINDOW_MS)) return false;
+  reply.status(429).send({
+    error: "Trop de tentatives. Réessayez dans quelques minutes.",
+    code: "auth.rate_limited",
+  });
+  return true;
+}
+
+app.get("/api/auth/status", async () => ({ needsSetup: await needsSetup() }));
 
 app.post("/api/auth/login", async (req, reply) => {
-  const body = req.body as {
-    login?: string;
-    password?: string;
-    rememberMe?: boolean;
-  };
-  const login = body.login?.trim();
-  const password = body.password ?? "";
-  if (!login || !password) {
-    return reply.status(400).send({
-      error: "Identifiant et mot de passe requis.",
-      code: "auth.missing_credentials",
-    });
+  const parsed = credentialsSchema
+    .extend({ rememberMe: z.boolean().optional() })
+    .safeParse(req.body);
+  if (!parsed.success || !parsed.data.password) {
+    return reply.status(400).send(missingCredentials);
   }
-  let slug: string;
+  const ipKey = `login-ip:${req.ip}`;
+  const loginKey = `login:${parsed.data.login.toLowerCase()}`;
+  if (rejectIfLimited(reply, ipKey, 30) || rejectIfLimited(reply, loginKey, 10)) return;
   try {
-    slug = tenantSlugFromLogin(login);
-  } catch {
-    return reply.status(400).send({ error: "Identifiant invalide.", code: "auth.invalid_login" });
+    const user = await verifyCredentials(parsed.data.login, parsed.data.password);
+    limiter.reset(loginKey);
+    return sessionResponse(user, Boolean(parsed.data.rememberMe));
+  } catch (e) {
+    if (e instanceof AccountError && e.code === "auth.invalid_credentials") {
+      limiter.record(ipKey, RATE_WINDOW_MS);
+      limiter.record(loginKey, RATE_WINDOW_MS);
+    }
+    return sendAccountError(reply, e);
   }
-  const accounts = await loadAccounts();
-  const user = accounts.users.find(
-    (u) => u.login.toLowerCase() === login.toLowerCase()
-  );
-  if (!user) {
+});
+
+app.post("/api/auth/setup", async (req, reply) => {
+  const setupKey = `setup:${req.ip}`;
+  if (rejectIfLimited(reply, setupKey, 10)) return;
+  limiter.record(setupKey, RATE_WINDOW_MS);
+  const parsed = credentialsSchema.extend({ setupToken: z.string() }).safeParse(req.body);
+  if (!parsed.success || !parsed.data.setupToken.trim()) {
+    return reply.status(400).send(missingCredentials);
+  }
+  const expected = await readSetupToken();
+  if (!expected || !safeEqual(parsed.data.setupToken.trim(), expected)) {
     return reply.status(401).send({
-      error: "Identifiant ou mot de passe incorrect.",
-      code: "auth.invalid_credentials",
+      error: "Code d'installation incorrect.",
+      code: "auth.setup_token",
     });
   }
-  const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) {
-    return reply.status(401).send({
-      error: "Identifiant ou mot de passe incorrect.",
-      code: "auth.invalid_credentials",
+  try {
+    const user = await setupOwner(parsed.data.login, parsed.data.password);
+    await clearSetupToken();
+    return sessionResponse(user, true);
+  } catch (e) {
+    return sendAccountError(reply, e);
+  }
+});
+
+app.get("/api/auth/me", async (req, reply) => {
+  const auth = await parseAuth(req, reply);
+  if (!auth) return;
+  const user = findBySlug(await readAccounts(), auth.sub);
+  if (!user) return reply.status(401).send({ error: "Session invalide", code: "auth.invalid_session" });
+  return toPublicAccount(user);
+});
+
+app.post("/api/auth/change-password", async (req, reply) => {
+  const auth = await parseAuth(req, reply);
+  if (!auth) return;
+  const parsed = changePasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return reply.status(400).send({
+      error: "Mot de passe actuel et nouveau mot de passe requis.",
+      code: "auth.missing_passwords",
     });
   }
-  const token = signToken({ sub: slug, login: user.login }, Boolean(body.rememberMe));
-  return { token, tenantSlug: slug, login: user.login };
+  if (rejectIfLimited(reply, `password:${auth.sub}`, 10)) return;
+  try {
+    const user = await changePassword(
+      auth.sub,
+      parsed.data.currentPassword,
+      parsed.data.newPassword
+    );
+    limiter.reset(`password:${auth.sub}`);
+    return sessionResponse(user, isLongLived(auth));
+  } catch (e) {
+    if (e instanceof AccountError) limiter.record(`password:${auth.sub}`, RATE_WINDOW_MS);
+    return sendAccountError(reply, e);
+  }
+});
+
+app.get("/api/accounts", async (req, reply) => {
+  const auth = await parseAuth(req, reply);
+  if (!auth) return;
+  try {
+    return { accounts: await listAccounts(auth.sub) };
+  } catch (e) {
+    return sendAccountError(reply, e);
+  }
+});
+
+app.post("/api/accounts", async (req, reply) => {
+  const auth = await parseAuth(req, reply);
+  if (!auth) return;
+  const parsed = credentialsSchema.safeParse(req.body);
+  if (!parsed.success) return reply.status(400).send(missingCredentials);
+  if (rejectIfLimited(reply, `accounts:${auth.sub}`, 20)) return;
+  limiter.record(`accounts:${auth.sub}`, RATE_WINDOW_MS);
+  try {
+    const user = await createMember(auth.sub, parsed.data.login, parsed.data.password);
+    return toPublicAccount(user);
+  } catch (e) {
+    return sendAccountError(reply, e);
+  }
+});
+
+app.post("/api/accounts/:login/reset-password", async (req, reply) => {
+  const auth = await parseAuth(req, reply);
+  if (!auth) return;
+  const { login } = req.params as { login: string };
+  const parsed = resetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return reply.status(400).send({
+      error: "Nouveau mot de passe requis.",
+      code: "auth.missing_passwords",
+    });
+  }
+  if (rejectIfLimited(reply, `accounts:${auth.sub}`, 20)) return;
+  limiter.record(`accounts:${auth.sub}`, RATE_WINDOW_MS);
+  try {
+    const user = await resetPassword(auth.sub, login, parsed.data.newPassword);
+    return toPublicAccount(user);
+  } catch (e) {
+    return sendAccountError(reply, e);
+  }
 });
 
 app.get("/api/state", async (req, reply) => {
-  const auth = parseAuth(req, reply);
+  const auth = await parseAuth(req, reply);
   if (!auth) return;
   const state = await loadState(auth.sub);
   return state;
 });
 
 app.put("/api/state", async (req, reply) => {
-  const auth = parseAuth(req, reply);
+  const auth = await parseAuth(req, reply);
   if (!auth) return;
   const body = req.body as { expectedVersion?: number; state?: AppState };
   if (body.expectedVersion === undefined || !body.state) {
@@ -148,7 +339,7 @@ app.put("/api/state", async (req, reply) => {
 });
 
 app.post("/api/clear-recipes", async (req, reply) => {
-  const auth = parseAuth(req, reply);
+  const auth = await parseAuth(req, reply);
   if (!auth) return;
   const body = req.body as { expectedVersion?: number };
   if (body.expectedVersion === undefined) {
@@ -178,7 +369,7 @@ app.post("/api/clear-recipes", async (req, reply) => {
 });
 
 app.post("/api/clear-shopping", async (req, reply) => {
-  const auth = parseAuth(req, reply);
+  const auth = await parseAuth(req, reply);
   if (!auth) return;
   const body = req.body as { expectedVersion?: number };
   if (body.expectedVersion === undefined) {
@@ -206,7 +397,7 @@ app.post("/api/clear-shopping", async (req, reply) => {
 });
 
 app.post("/api/recipe-url-check", async (req, reply) => {
-  const auth = parseAuth(req, reply);
+  const auth = await parseAuth(req, reply);
   if (!auth) return;
   const body = req.body as { url?: string };
   const raw = typeof body.url === "string" ? body.url.trim() : "";
@@ -224,7 +415,7 @@ app.post("/api/recipe-url-check", async (req, reply) => {
 });
 
 app.post("/api/import", async (req, reply) => {
-  const auth = parseAuth(req, reply);
+  const auth = await parseAuth(req, reply);
   if (!auth) return;
   const body = req.body as { json?: string };
   if (!body.json || typeof body.json !== "string") {
@@ -295,10 +486,10 @@ app.post("/api/import", async (req, reply) => {
   return next;
 });
 
-const staticDir = process.env.CLIENT_DIST;
+const staticDir = resolveStaticDir(__dirname);
 if (staticDir) {
   await app.register(staticPlugin, {
-    root: path.resolve(staticDir),
+    root: staticDir,
     prefix: "/",
   });
   app.setNotFoundHandler((req, reply) => {

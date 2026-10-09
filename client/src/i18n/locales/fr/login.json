@@ -4,5 +4,18 @@
   "password": "Mot de passe",
   "rememberMe": "Se souvenir de moi",
   "submit": "Se connecter",
-  "pending": "Connexion…"
+  "pending": "Connexion…",
+  "checking": "Chargement…",
+  "setup": {
+    "subtitle": "Créer le compte administrateur",
+    "body": "Première ouverture de Preppr : ce compte servira à votre famille et pourra créer les comptes d’autres foyers depuis les Paramètres.",
+    "token": "Code d’installation",
+    "tokenHint": "Affiché dans les journaux au démarrage, par exemple avec docker compose logs -f app.",
+    "usernameHint": "Lettres, chiffres et tirets.",
+    "passwordHint": "12 caractères minimum.",
+    "confirm": "Confirmer le mot de passe",
+    "mismatch": "Les deux mots de passe ne correspondent pas.",
+    "submit": "Créer le compte",
+    "pending": "Création…"
+  }
 }

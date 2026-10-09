@@ -46,5 +46,31 @@
   "exported": "Prompt complet exporté (fichier téléchargé)",
   "exportTitle": "Export du prompt IA",
   "exportBody": "Télécharge le texte exact de la consigne système envoyée au modèle (contexte utilisateur + règles JSON), comme lors de l’envoi d’un message dans le générateur de menus.",
-  "export": "Exporter le prompt complet"
+  "export": "Exporter le prompt complet",
+  "account": {
+    "title": "Mon compte",
+    "signedInAs": "Connecté en tant que {{login}}",
+    "ownerBadge": "administrateur",
+    "offline": "Connexion requise pour gérer le compte.",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le nouveau mot de passe",
+    "mismatch": "Les deux mots de passe ne correspondent pas.",
+    "changePassword": "Changer le mot de passe",
+    "passwordChanged": "Mot de passe modifié. Les autres appareils connectés à ce compte devront se reconnecter.",
+    "householdsTitle": "Comptes des foyers",
+    "householdsBody": "Chaque compte a ses propres recettes et sa propre liste de courses. Les personnes d’un même foyer partagent un seul compte. Communiquez vous-même l’identifiant et le mot de passe.",
+    "createTitle": "Créer un compte",
+    "newLogin": "Identifiant du nouveau foyer",
+    "newLoginHint": "Lettres, chiffres et tirets.",
+    "initialPassword": "Mot de passe initial (12 caractères minimum)",
+    "create": "Créer le compte",
+    "created": "Compte « {{login}} » créé.",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "resetWarning": "Les appareils connectés au compte « {{login}} » seront déconnectés. Avec ce mot de passe, vous pourrez aussi vous connecter à ce foyer : ne l’utilisez que pour aider la personne qui l’a oublié.",
+    "newPasswordFor": "Nouveau mot de passe pour {{login}}",
+    "resetConfirm": "Réinitialiser",
+    "resetDone": "Mot de passe de « {{login}} » réinitialisé.",
+    "cancel": "Annuler"
+  }
 }

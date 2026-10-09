@@ -53,6 +53,7 @@ export default function AppLayout() {
   function logout() {
     const key = getTenantCacheKey();
     clearAuthToken();
+    useAppStore.getState().resetSession();
     if (key) void clearAppCache(key);
     nav("/login", { replace: true });
   }

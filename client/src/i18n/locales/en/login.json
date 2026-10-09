@@ -4,5 +4,18 @@
   "password": "Password",
   "rememberMe": "Remember me",
   "submit": "Sign in",
-  "pending": "Signing in…"
+  "pending": "Signing in…",
+  "checking": "Loading…",
+  "setup": {
+    "subtitle": "Create the administrator account",
+    "body": "First time opening Preppr: this account is for your family and can create accounts for other households from Settings.",
+    "token": "Installation code",
+    "tokenHint": "Shown in the startup logs, for example with docker compose logs -f app.",
+    "usernameHint": "Letters, digits and hyphens.",
+    "passwordHint": "At least 12 characters.",
+    "confirm": "Confirm password",
+    "mismatch": "The two passwords do not match.",
+    "submit": "Create account",
+    "pending": "Creating…"
+  }
 }

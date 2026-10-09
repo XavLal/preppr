@@ -4,7 +4,20 @@
     "invalid_session": "Session invalide",
     "missing_credentials": "Identifiant et mot de passe requis.",
     "invalid_login": "Identifiant invalide.",
-    "invalid_credentials": "Identifiant ou mot de passe incorrect."
+    "invalid_credentials": "Identifiant ou mot de passe incorrect.",
+    "password_too_short": "Mot de passe trop court (12 caractères minimum).",
+    "password_too_long": "Mot de passe trop long (72 octets maximum).",
+    "rate_limited": "Trop de tentatives. Réessayez dans quelques minutes.",
+    "setup_token": "Code d’installation incorrect.",
+    "wrong_password": "Mot de passe actuel incorrect.",
+    "setup_done": "Le compte administrateur existe déjà. Connectez-vous.",
+    "missing_passwords": "Renseignez les mots de passe demandés."
+  },
+  "accounts": {
+    "login_taken": "Cet identifiant existe déjà (ou un identifiant trop proche, comme « Famille A » et « famille-a »).",
+    "forbidden": "Réservé au compte administrateur.",
+    "not_found": "Compte introuvable.",
+    "self_reset": "Changez votre propre mot de passe dans « Mon compte »."
   },
   "state": {
     "missing_body": "expectedVersion et state requis.",
@@ -42,5 +55,9 @@
   "clear_recipes_failed": "Suppression de toutes les recettes impossible.",
   "online_required_clear_shopping": "Connexion requise pour vider la liste de courses.",
   "clear_shopping_list_failed": "Impossible de vider la liste de courses.",
+  "setup_failed": "Création du compte impossible",
+  "password_change_failed": "Changement de mot de passe impossible",
+  "account_create_failed": "Création du compte impossible",
+  "password_reset_failed": "Réinitialisation impossible",
   "generic": "Erreur"
 }

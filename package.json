@@ -10,6 +10,8 @@
     "build": "npm run build -w client && npm run build -w server",
     "start": "npm run start -w server",
     "add-user": "npm run add-user -w server",
+    "reset-password": "npm run reset-password -w server",
+    "migrate-accounts": "npm run migrate-accounts -w server",
     "docker:publish": "node scripts/docker-publish.js"
   },
   "devDependencies": {

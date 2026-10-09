@@ -1,5 +1,5 @@
 import readline from "readline";
-import { AccountError, createAccount } from "../lib/accounts.js";
+import { AccountError, forceResetPassword } from "../lib/accounts.js";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -21,8 +21,8 @@ async function main() {
     login = argvLogin;
     password = argvPassword;
   } else {
-    login = (await ask("Identifiant (famille): ")).trim();
-    password = await ask("Mot de passe: ");
+    login = (await ask("Identifiant : ")).trim();
+    password = await ask("Nouveau mot de passe : ");
   }
   rl.close();
 
@@ -31,9 +31,9 @@ async function main() {
     process.exit(1);
   }
   try {
-    const user = await createAccount(login, password);
-    const roleLabel = user.role === "owner" ? "administrateur" : "foyer";
-    console.log(`Compte créé (${roleLabel}) :`, user.login);
+    const user = await forceResetPassword(login, password);
+    console.log("Mot de passe modifié :", user.login);
+    console.log("Les sessions ouvertes de ce compte sont déconnectées.");
   } catch (e) {
     if (e instanceof AccountError) {
       console.error(e.message);

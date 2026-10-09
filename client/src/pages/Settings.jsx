@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import AccountSettings from "@/components/AccountSettings";
 import { DEFAULT_ROLE_CONTEXT } from "@/config/prompts.js";
 import i18n, { currentLocale, setAppLocale } from "@/i18n";
 import { useCatalogLabels } from "@/i18n/labels";
@@ -200,6 +201,8 @@ export default function Settings() {
           </select>
         </label>
       </section>
+
+      <AccountSettings />
 
       <section className="card" style={{ marginTop: "1rem" }}>
         <h2>{t("mobileTitle")}</h2>

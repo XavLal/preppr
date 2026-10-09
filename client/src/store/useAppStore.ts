@@ -1,5 +1,6 @@
 import i18n from "@/i18n";
 import { create } from "zustand";
+import { authGeneration, getAuthToken } from "@/lib/authToken";
 import {
   apiClearRecipes,
   apiClearShopping,
@@ -14,7 +15,7 @@ import {
 import { mergeServerWithLocalDraft } from "@/lib/mergeOfflineState";
 import { normalizeAppState } from "@/lib/normalizeAppState";
 import { loadAppCache, saveAppCache } from "@/lib/offlineDb";
-import { getTenantCacheKey } from "@/lib/tenantCacheKey";
+import { getTenantCacheKey, tenantCacheKeyFromToken } from "@/lib/tenantCacheKey";
 import type { AppState } from "@/types";
 
 type AppStore = {
@@ -30,14 +31,33 @@ type AppStore = {
   clearAllRecipes: () => Promise<boolean>;
   clearAllShopping: () => Promise<boolean>;
   flushPendingSync: () => Promise<void>;
+  resetSession: () => void;
 };
+
+type SessionStamp = { gen: number; token: string | null };
+
+function stampSession(): SessionStamp {
+  return { gen: authGeneration(), token: getAuthToken() };
+}
+
+function sameSession(session: SessionStamp): boolean {
+  return (
+    session.gen === authGeneration() &&
+    tenantCacheKeyFromToken(getAuthToken()) === tenantCacheKeyFromToken(session.token)
+  );
+}
 
 function clone<T>(x: T): T {
   return JSON.parse(JSON.stringify(x)) as T;
 }
 
-async function persistCache(state: AppState, pendingSync: boolean): Promise<void> {
-  const key = getTenantCacheKey();
+async function persistCache(
+  state: AppState,
+  pendingSync: boolean,
+  session: SessionStamp
+): Promise<void> {
+  if (!sameSession(session)) return;
+  const key = tenantCacheKeyFromToken(session.token);
   if (!key) return;
   try {
     await saveAppCache(key, state, pendingSync);
@@ -52,11 +72,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
   loading: false,
   pendingSync: false,
   setError: (e) => set({ error: e }),
+  resetSession: () => set({ state: null, error: null, loading: false, pendingSync: false }),
 
   hydrate: async () => {
-    set({ loading: true, error: null });
+    const session = stampSession();
+    set({ loading: true, error: null, state: null, pendingSync: false });
     try {
-      let raw = await apiGetState();
+      let raw = await apiGetState(session.token);
       const key = getTenantCacheKey();
       let needPersistMigrate = false;
       if (key) {
@@ -66,17 +88,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
       let s = normalizeAppState(raw);
 
+      if (!sameSession(session)) return;
       if (needPersistMigrate && key) {
         const online = typeof navigator !== "undefined" && navigator.onLine;
         if (online) {
           try {
-            const res = await apiPutState(s.version, s);
+            const res = await apiPutState(s.version, s, session.token);
             if (res.ok) {
               s = normalizeAppState(res.state);
               markLegacyPromptImportDone(key);
             }
           } catch {
-            await persistCache(s, true);
+            if (!sameSession(session)) return;
+            await persistCache(s, true, session);
             set({
               state: s,
               loading: false,
@@ -86,7 +110,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
             return;
           }
         } else {
-          await persistCache(s, true);
+          if (!sameSession(session)) return;
+          await persistCache(s, true, session);
           set({
             state: s,
             loading: false,
@@ -97,13 +122,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
         }
       }
 
+      if (!sameSession(session)) return;
       set({ state: s, loading: false, pendingSync: false });
-      void persistCache(s, false);
+      void persistCache(s, false, session);
     } catch (e) {
+      if (!sameSession(session)) return;
       const key = getTenantCacheKey();
       if (key) {
         try {
           const row = await loadAppCache(key);
+          if (!sameSession(session)) return;
           if (row?.state) {
             set({
               state: normalizeAppState(row.state),
@@ -128,18 +156,21 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   setStateFromServer: (s) => {
-    if (get().pendingSync) return;
+    const session = stampSession();
+    if (get().pendingSync || !sameSession(session)) return;
     const next = normalizeAppState(s);
     set({ state: next, pendingSync: false });
-    void persistCache(next, false);
+    void persistCache(next, false, session);
   },
 
   importJson: async (text) => {
+    const session = stampSession();
     set({ error: null });
     try {
-      const s = normalizeAppState(await apiImportJson(text));
+      const s = normalizeAppState(await apiImportJson(text, session.token));
+      if (!sameSession(session)) return false;
       set({ state: s, pendingSync: false });
-      void persistCache(s, false);
+      void persistCache(s, false, session);
       return true;
     } catch (e) {
       set({
@@ -150,6 +181,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   commit: async (updater) => {
+    const session = stampSession();
     const cur = get().state;
     if (!cur) return false;
     const next = clone(cur);
@@ -160,29 +192,31 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const online = typeof navigator !== "undefined" && navigator.onLine;
 
     set({ state: normalized, pendingSync: true, error: null });
-    void persistCache(normalized, true);
+    void persistCache(normalized, true, session);
 
     if (!online) {
       return true;
     }
 
     try {
-      let res = await apiPutState(expectedVersion, normalized);
+      let res = await apiPutState(expectedVersion, normalized, session.token);
+      if (!sameSession(session)) return false;
       if (res.ok) {
         const st = normalizeAppState(res.state);
         set({ state: st, pendingSync: false, error: null });
-        void persistCache(st, false);
+        void persistCache(st, false, session);
         return true;
       }
       let server = normalizeAppState(res.conflict);
       let merged = mergeServerWithLocalDraft(server, normalized);
       set({ state: merged, error: res.message, pendingSync: true });
-      void persistCache(merged, true);
-      res = await apiPutState(server.version, merged);
+      void persistCache(merged, true, session);
+      res = await apiPutState(server.version, merged, session.token);
+      if (!sameSession(session)) return false;
       if (res.ok) {
         const st = normalizeAppState(res.state);
         set({ state: st, pendingSync: false, error: null });
-        void persistCache(st, false);
+        void persistCache(st, false, session);
         return true;
       }
       server = normalizeAppState(res.conflict);
@@ -192,14 +226,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
         error: res.message,
         pendingSync: true,
       });
-      void persistCache(merged, true);
+      void persistCache(merged, true, session);
       return false;
     } catch {
-      return true;
+      return sameSession(session);
     }
   },
 
   clearAllRecipes: async () => {
+    const session = stampSession();
     const cur = get().state;
     if (!cur) return false;
     const online = typeof navigator !== "undefined" && navigator.onLine;
@@ -213,11 +248,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
     set({ error: null });
     try {
-      const res = await apiClearRecipes(cur.version);
+      const res = await apiClearRecipes(cur.version, session.token);
+      if (!sameSession(session)) return false;
       if (res.ok) {
         const st = normalizeAppState(res.state);
         set({ state: st, pendingSync: false, error: null });
-        void persistCache(st, false);
+        void persistCache(st, false, session);
         return true;
       }
       const conflict = normalizeAppState(res.conflict);
@@ -226,7 +262,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         error: res.message,
         pendingSync: false,
       });
-      void persistCache(conflict, false);
+      void persistCache(conflict, false, session);
       return false;
     } catch (e) {
       set({
@@ -238,6 +274,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   clearAllShopping: async () => {
+    const session = stampSession();
     const cur = get().state;
     if (!cur) return false;
     const online = typeof navigator !== "undefined" && navigator.onLine;
@@ -251,11 +288,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
     set({ error: null });
     try {
-      const res = await apiClearShopping(cur.version);
+      const res = await apiClearShopping(cur.version, session.token);
+      if (!sameSession(session)) return false;
       if (res.ok) {
         const st = normalizeAppState(res.state);
         set({ state: st, pendingSync: false, error: null });
-        void persistCache(st, false);
+        void persistCache(st, false, session);
         return true;
       }
       const conflict = normalizeAppState(res.conflict);
@@ -264,7 +302,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         error: res.message,
         pendingSync: false,
       });
-      void persistCache(conflict, false);
+      void persistCache(conflict, false, session);
       return false;
     } catch (e) {
       set({
@@ -276,26 +314,30 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   flushPendingSync: async () => {
+    const session = stampSession();
     const { pendingSync, state } = get();
     if (!pendingSync || !state) return;
     if (typeof navigator !== "undefined" && !navigator.onLine) return;
     try {
-      let server = normalizeAppState(await apiGetState());
+      let server = normalizeAppState(await apiGetState(session.token));
+      if (!sameSession(session)) return;
       let merged = mergeServerWithLocalDraft(server, state);
-      let res = await apiPutState(server.version, merged);
+      let res = await apiPutState(server.version, merged, session.token);
+      if (!sameSession(session)) return;
       if (res.ok) {
         const st = normalizeAppState(res.state);
         set({ state: st, pendingSync: false, error: null });
-        void persistCache(st, false);
+        void persistCache(st, false, session);
         return;
       }
       server = normalizeAppState(res.conflict);
       merged = mergeServerWithLocalDraft(server, state);
-      res = await apiPutState(server.version, merged);
+      res = await apiPutState(server.version, merged, session.token);
+      if (!sameSession(session)) return;
       if (res.ok) {
         const st = normalizeAppState(res.state);
         set({ state: st, pendingSync: false, error: null });
-        void persistCache(st, false);
+        void persistCache(st, false, session);
       }
     } catch {
       /* toujours hors ligne ou erreur */

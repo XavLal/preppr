@@ -4,7 +4,20 @@
     "invalid_session": "Invalid session",
     "missing_credentials": "Username and password are required.",
     "invalid_login": "Invalid username.",
-    "invalid_credentials": "Incorrect username or password."
+    "invalid_credentials": "Incorrect username or password.",
+    "password_too_short": "Password too short (at least 12 characters).",
+    "password_too_long": "Password too long (72 bytes maximum).",
+    "rate_limited": "Too many attempts. Try again in a few minutes.",
+    "setup_token": "Incorrect installation code.",
+    "wrong_password": "Current password is incorrect.",
+    "setup_done": "The administrator account already exists. Please sign in.",
+    "missing_passwords": "Fill in the requested passwords."
+  },
+  "accounts": {
+    "login_taken": "This username already exists (or one too similar, like “Family A” and “family-a”).",
+    "forbidden": "Only the administrator account can do this.",
+    "not_found": "Account not found.",
+    "self_reset": "Change your own password under “My account”."
   },
   "state": {
     "missing_body": "expectedVersion and state are required.",
@@ -42,5 +55,9 @@
   "clear_recipes_failed": "Could not delete all recipes.",
   "online_required_clear_shopping": "A connection is required to clear the shopping list.",
   "clear_shopping_list_failed": "Could not clear the shopping list.",
+  "setup_failed": "Could not create the account",
+  "password_change_failed": "Could not change the password",
+  "account_create_failed": "Could not create the account",
+  "password_reset_failed": "Could not reset the password",
   "generic": "Error"
 }

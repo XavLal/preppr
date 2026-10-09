@@ -46,5 +46,31 @@
   "exported": "Full prompt exported (file downloaded)",
   "exportTitle": "Export the AI prompt",
   "exportBody": "Downloads the exact system instructions sent to the model (user context + JSON rules), as when you send a message in the menu generator.",
-  "export": "Export the full prompt"
+  "export": "Export the full prompt",
+  "account": {
+    "title": "My account",
+    "signedInAs": "Signed in as {{login}}",
+    "ownerBadge": "administrator",
+    "offline": "A connection is required to manage the account.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm the new password",
+    "mismatch": "The two passwords do not match.",
+    "changePassword": "Change password",
+    "passwordChanged": "Password changed. Other devices signed in to this account will need to sign in again.",
+    "householdsTitle": "Household accounts",
+    "householdsBody": "Each account has its own recipes and its own shopping list. People in the same household share one account. Pass on the username and password yourself.",
+    "createTitle": "Create an account",
+    "newLogin": "Username for the new household",
+    "newLoginHint": "Letters, digits and hyphens.",
+    "initialPassword": "Initial password (at least 12 characters)",
+    "create": "Create account",
+    "created": "Account “{{login}}” created.",
+    "resetPassword": "Reset password",
+    "resetWarning": "Devices signed in to “{{login}}” will be signed out. With this password you could also sign in to that household: only use it to help someone who forgot theirs.",
+    "newPasswordFor": "New password for {{login}}",
+    "resetConfirm": "Reset",
+    "resetDone": "Password for “{{login}}” reset.",
+    "cancel": "Cancel"
+  }
 }

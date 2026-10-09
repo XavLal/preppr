@@ -16,8 +16,11 @@ function decodeJwtSub(token: string): string | null {
 }
 
 /** Clé de partitionnement du cache hors ligne (champ `sub` du JWT, non vérifié). */
+export function tenantCacheKeyFromToken(token: string | null): string | null {
+  if (!token) return null;
+  return decodeJwtSub(token);
+}
+
 export function getTenantCacheKey(): string | null {
-  const t = getAuthToken();
-  if (!t) return null;
-  return decodeJwtSub(t);
+  return tenantCacheKeyFromToken(getAuthToken());
 }
