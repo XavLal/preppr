@@ -10,7 +10,7 @@ Tout le foyer utilise **le même identifiant**. Les recettes, la liste de course
 2. Si personne n’a encore de compte, le formulaire **Créer le compte administrateur** s’affiche. Il demande le code d’installation affiché dans les journaux du serveur, puis un mot de passe d’au moins 12 caractères. Sinon, saisissez l’identifiant et le mot de passe du foyer.
 3. Laissez **Se souvenir de moi** coché sur un téléphone ou un ordinateur personnel (session de 30 jours). Décochez-la sur un appareil partagé (session de 8 heures). Le compte administrateur, lui, est créé avec une session de 30 jours.
 
-**Paramètres → Mon compte** change le mot de passe. Les autres appareils de ce compte doivent alors se reconnecter. Le compte administrateur voit aussi **Comptes des foyers** : il peut créer un autre foyer (recettes et liste séparées) et réinitialiser le mot de passe d’un foyer qui l’a oublié. Il n’y a pas de lien « mot de passe oublié » : si l’administrateur oublie le sien, la commande de secours est dans le [guide d’installation](installation.md).
+**Paramètres → Mon compte** change le mot de passe. Les autres appareils de ce compte doivent alors se reconnecter. Le compte administrateur voit aussi **Comptes des foyers** : il peut créer un autre foyer (recettes et liste séparées), le renommer, le supprimer (recettes et liste incluses) et réinitialiser le mot de passe d’un foyer qui l’a oublié. Il n’y a pas de lien « mot de passe oublié » : si l’administrateur oublie le sien, la commande de secours est dans le [guide d’installation](installation.md).
 
 Le menu **☰** en haut à droite contient **Paramètres** et **Déconnexion**. La déconnexion efface aussi la copie locale de cette famille sur cet appareil.
 

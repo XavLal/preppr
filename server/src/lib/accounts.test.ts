@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
@@ -9,10 +9,12 @@ import {
   clearAccountsCache,
   createAccount,
   createMember,
+  deleteMember,
   listAccounts,
   migrateDuplicateSlugs,
   needsSetup,
   readAccounts,
+  renameMember,
   resetPassword,
   setupOwner,
   verifyCredentials,
@@ -185,6 +187,64 @@ describe("mots de passe", () => {
       resetPassword("admin", "inconnu", "nouveau-motdepasse"),
       rejectsWith("accounts.not_found")
     );
+  });
+});
+
+describe("renommage et suppression", () => {
+  beforeEach(async () => {
+    await setupOwner("admin", PASSWORD);
+    await createMember("admin", "dupont", PASSWORD);
+  });
+
+  it("renomme un foyer et emporte ses données", async () => {
+    await mkdir(tenantDir("dupont"), { recursive: true });
+    await writeFile(path.join(tenantDir("dupont"), "state.json"), '{"version":3}\n');
+    const updated = await renameMember("admin", "Dupont", "Famille Martin");
+    assert.equal(updated.login, "Famille Martin");
+    assert.equal(updated.tenantSlug, "famille-martin");
+    assert.equal(updated.sessionVersion, 1);
+    await assert.rejects(verifyCredentials("dupont", PASSWORD), rejectsWith("auth.invalid_credentials"));
+    assert.equal((await verifyCredentials("Famille Martin", PASSWORD)).tenantSlug, "famille-martin");
+    const moved = await readFile(path.join(tenantDir("famille-martin"), "state.json"), "utf-8");
+    assert.match(moved, /"version":3/);
+    await assert.rejects(readFile(path.join(tenantDir("dupont"), "state.json"), "utf-8"));
+  });
+
+  it("refuse un identifiant pris, le compte administrateur, ou un foyer non admin", async () => {
+    await createMember("admin", "martin", PASSWORD);
+    await createMember("admin", "Famille Martin", PASSWORD);
+    await assert.rejects(
+      renameMember("admin", "dupont", "martin"),
+      rejectsWith("accounts.login_taken")
+    );
+    await assert.rejects(
+      renameMember("admin", "dupont", "famille-martin"),
+      rejectsWith("accounts.login_taken")
+    );
+    await mkdir(tenantDir("libre"), { recursive: true });
+    await assert.rejects(
+      renameMember("admin", "dupont", "libre"),
+      rejectsWith("accounts.slug_busy")
+    );
+    await assert.rejects(renameMember("admin", "admin", "autre"), rejectsWith("accounts.self_rename"));
+    await assert.rejects(
+      renameMember("dupont", "martin", "autre"),
+      rejectsWith("accounts.forbidden")
+    );
+    await assert.rejects(renameMember("admin", "inconnu", "autre"), rejectsWith("accounts.not_found"));
+    await assert.rejects(renameMember("admin", "dupont", "!!!"), rejectsWith("auth.invalid_login"));
+  });
+
+  it("supprime le compte et son dossier", async () => {
+    await mkdir(tenantDir("dupont"), { recursive: true });
+    await writeFile(path.join(tenantDir("dupont"), "state.json"), '{"version":1}\n');
+    await deleteMember("admin", "dupont");
+    const logins = (await listAccounts("admin")).map((a) => a.login);
+    assert.deepEqual(logins, ["admin"]);
+    await assert.rejects(verifyCredentials("dupont", PASSWORD), rejectsWith("auth.invalid_credentials"));
+    await assert.rejects(stat(tenantDir("dupont")));
+    await assert.rejects(deleteMember("admin", "admin"), rejectsWith("accounts.self_delete"));
+    await assert.rejects(deleteMember("admin", "inconnu"), rejectsWith("accounts.not_found"));
   });
 });
 

@@ -129,6 +129,23 @@ export async function apiCreateAccount(body: {
   return { login: data.login, role: data.role, tenantSlug: data.tenantSlug };
 }
 
+export async function apiRenameAccount(login: string, newLogin: string): Promise<Account> {
+  const res = await apiFetch(`/api/accounts/${encodeURIComponent(login)}/rename`, {
+    method: "POST",
+    body: JSON.stringify({ login: newLogin }),
+  });
+  const data = (await res.json()) as ApiErrorBody & Account;
+  if (!res.ok) throw new Error(apiErrorMessage(data, "account_rename_failed"));
+  return { login: data.login, role: data.role, tenantSlug: data.tenantSlug };
+}
+
+export async function apiDeleteAccount(login: string): Promise<void> {
+  const res = await apiFetch(`/api/accounts/${encodeURIComponent(login)}`, { method: "DELETE" });
+  if (res.status === 204) return;
+  const data = (await res.json()) as ApiErrorBody;
+  if (!res.ok) throw new Error(apiErrorMessage(data, "account_delete_failed"));
+}
+
 export async function apiResetPassword(login: string, newPassword: string): Promise<void> {
   const res = await apiFetch(`/api/accounts/${encodeURIComponent(login)}/reset-password`, {
     method: "POST",

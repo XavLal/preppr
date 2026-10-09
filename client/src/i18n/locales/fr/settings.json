@@ -59,7 +59,7 @@
     "changePassword": "Changer le mot de passe",
     "passwordChanged": "Mot de passe modifié. Les autres appareils connectés à ce compte devront se reconnecter.",
     "householdsTitle": "Comptes des foyers",
-    "householdsBody": "Chaque compte a ses propres recettes et sa propre liste de courses. Les personnes d’un même foyer partagent un seul compte. Communiquez vous-même l’identifiant et le mot de passe.",
+    "householdsBody": "Chaque compte a ses propres recettes et sa propre liste de courses. Les personnes d’un même foyer partagent un seul compte. Vous pouvez renommer un foyer ou le supprimer : la suppression efface ses recettes et sa liste. Communiquez vous-même l’identifiant et le mot de passe.",
     "createTitle": "Créer un compte",
     "newLogin": "Identifiant du nouveau foyer",
     "newLoginHint": "Lettres, chiffres et tirets.",
@@ -71,6 +71,17 @@
     "newPasswordFor": "Nouveau mot de passe pour {{login}}",
     "resetConfirm": "Réinitialiser",
     "resetDone": "Mot de passe de « {{login}} » réinitialisé.",
+    "rename": "Renommer",
+    "renameWarning": "Les recettes et la liste de courses sont conservées. Les appareils de ce foyer devront se reconnecter avec le nouvel identifiant.",
+    "newLoginFor": "Nouvel identifiant pour {{login}}",
+    "renameConfirm": "Renommer le compte",
+    "renamed": "Compte renommé en « {{login}} ».",
+    "delete": "Supprimer",
+    "deleteWarning": "Les recettes, la liste de courses et les réglages de « {{login}} » seront effacés. Cette action est définitive. Les appareils de ce foyer seront déconnectés.",
+    "deleteConfirmLabel": "Saisissez « {{login}} » pour confirmer",
+    "deleteMismatch": "L’identifiant saisi ne correspond pas.",
+    "deleteConfirm": "Supprimer le compte",
+    "deleted": "Compte « {{login}} » supprimé.",
     "cancel": "Annuler"
   }
 }

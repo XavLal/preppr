@@ -92,6 +92,8 @@ Signed in as the administrator: **Settings → Household accounts**.
 
 Two usernames that normalize the same way (`Famille A` and `famille-a`) cannot both exist: the second one is rejected. Each household has its own recipes and list. The administrator does not see them. Other accounts cannot create households.
 
+From the same page, the administrator can rename a household or delete it. Renaming keeps the recipes and the list; devices sign in again with the new username. Deletion erases that household’s recipes, list and settings.
+
 The same creation works without the browser. The first account created this way is the administrator; later ones are ordinary households.
 
 ```bash

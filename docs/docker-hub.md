@@ -92,6 +92,8 @@ Connecté avec le compte administrateur : **Paramètres → Comptes des foyers**
 
 Deux identifiants qui se normalisent de la même façon (`Famille A` et `famille-a`) ne peuvent pas coexister : le second est refusé. Chaque foyer a ses recettes et sa liste. L’administrateur ne les voit pas. Les autres comptes ne peuvent pas en créer.
 
+Depuis la même page, l’administrateur peut renommer un foyer ou le supprimer. Le renommage conserve les recettes et la liste ; les appareils se reconnectent avec le nouvel identifiant. La suppression efface les recettes, la liste et les réglages de ce foyer.
+
 La même création est possible sans le navigateur. Le premier compte créé ainsi est administrateur, les suivants sont des foyers ordinaires.
 
 ```bash

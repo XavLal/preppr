@@ -17,7 +17,11 @@
     "login_taken": "This username already exists (or one too similar, like “Family A” and “family-a”).",
     "forbidden": "Only the administrator account can do this.",
     "not_found": "Account not found.",
-    "self_reset": "Change your own password under “My account”."
+    "self_reset": "Change your own password under “My account”.",
+    "self_rename": "The administrator account cannot be renamed.",
+    "self_delete": "The administrator account cannot be deleted.",
+    "missing_login": "A new username is required.",
+    "slug_busy": "A data folder already exists for this username."
   },
   "state": {
     "missing_body": "expectedVersion and state are required.",
@@ -58,6 +62,8 @@
   "setup_failed": "Could not create the account",
   "password_change_failed": "Could not change the password",
   "account_create_failed": "Could not create the account",
+  "account_rename_failed": "Could not rename the account",
+  "account_delete_failed": "Could not delete the account",
   "password_reset_failed": "Could not reset the password",
   "generic": "Error"
 }

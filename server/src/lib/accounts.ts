@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { cp, readFile, stat } from "fs/promises";
+import { cp, readFile, rename, rm, stat } from "fs/promises";
 import { z } from "zod";
 import { tenantSlugFromLogin } from "./slug.js";
 import {
@@ -29,6 +29,10 @@ export const resetPasswordSchema = z.object({
   newPassword: z.string(),
 });
 
+export const renameAccountSchema = z.object({
+  login: z.string().trim().min(1),
+});
+
 export type AccountErrorCode =
   | "auth.invalid_login"
   | "auth.password_too_short"
@@ -41,7 +45,11 @@ export type AccountErrorCode =
   | "accounts.login_taken"
   | "accounts.forbidden"
   | "accounts.not_found"
-  | "accounts.self_reset";
+  | "accounts.self_reset"
+  | "accounts.self_rename"
+  | "accounts.self_delete"
+  | "accounts.missing_login"
+  | "accounts.slug_busy";
 
 const STATUS: Record<AccountErrorCode, number> = {
   "auth.invalid_login": 400,
@@ -56,6 +64,10 @@ const STATUS: Record<AccountErrorCode, number> = {
   "accounts.forbidden": 403,
   "accounts.not_found": 404,
   "accounts.self_reset": 400,
+  "accounts.self_rename": 400,
+  "accounts.self_delete": 400,
+  "accounts.missing_login": 400,
+  "accounts.slug_busy": 409,
 };
 
 const MESSAGES: Record<AccountErrorCode, string> = {
@@ -71,6 +83,10 @@ const MESSAGES: Record<AccountErrorCode, string> = {
   "accounts.forbidden": "Réservé au compte administrateur.",
   "accounts.not_found": "Compte introuvable.",
   "accounts.self_reset": "Changez votre propre mot de passe depuis « Mon compte ».",
+  "accounts.self_rename": "Le compte administrateur ne peut pas être renommé.",
+  "accounts.self_delete": "Le compte administrateur ne peut pas être supprimé.",
+  "accounts.missing_login": "Nouvel identifiant requis.",
+  "accounts.slug_busy": "Un dossier de données existe déjà pour cet identifiant.",
 };
 
 export class AccountError extends Error {
@@ -104,6 +120,20 @@ function slugOrThrow(login: string): string {
   }
 }
 
+function conflictingUser(
+  file: AccountsFile,
+  login: string,
+  tenantSlug: string,
+  exceptSlug?: string
+): boolean {
+  const lower = login.trim().toLowerCase();
+  return file.users.some(
+    (u) =>
+      u.tenantSlug !== exceptSlug &&
+      (u.tenantSlug === tenantSlug || u.login.toLowerCase() === lower)
+  );
+}
+
 /** Deux identifiants qui donnent le même slug partageraient le même dossier de données. */
 export function addAccount(
   file: AccountsFile,
@@ -112,12 +142,7 @@ export function addAccount(
 ): { file: AccountsFile; user: AccountUser } {
   const trimmed = login.trim();
   const tenantSlug = slugOrThrow(trimmed);
-  if (
-    file.users.some(
-      (u) =>
-        u.tenantSlug === tenantSlug || u.login.toLowerCase() === trimmed.toLowerCase()
-    )
-  ) {
+  if (conflictingUser(file, trimmed, tenantSlug)) {
     throw new AccountError("accounts.login_taken");
   }
   const role: AccountRole = file.users.length === 0 ? "owner" : "member";
@@ -235,9 +260,9 @@ export function createMember(
   });
 }
 
-function replaceUser(file: AccountsFile, updated: AccountUser): AccountsFile {
+function replaceUser(file: AccountsFile, previousSlug: string, updated: AccountUser): AccountsFile {
   return {
-    users: file.users.map((u) => (u.tenantSlug === updated.tenantSlug ? updated : u)),
+    users: file.users.map((u) => (u.tenantSlug === previousSlug ? updated : u)),
   };
 }
 
@@ -251,7 +276,7 @@ async function setPassword(
     passwordHash: await hashPassword(newPassword),
     sessionVersion: user.sessionVersion + 1,
   };
-  await writeAccounts(replaceUser(file, updated));
+  await writeAccounts(replaceUser(file, user.tenantSlug, updated));
   return updated;
 }
 
@@ -285,6 +310,109 @@ export function resetPassword(
     if (target.tenantSlug === actor.tenantSlug) throw new AccountError("accounts.self_reset");
     assertPassword(newPassword);
     return setPassword(file, target, newPassword);
+  });
+}
+
+function assertTenantSlug(slug: string): void {
+  if (!/^[a-z0-9-]{1,64}$/.test(slug)) throw new AccountError("auth.invalid_login");
+}
+
+/**
+ * Le dossier suit l’identifiant : deux logins qui se normalisent pareil
+ * ne doivent pas viser les mêmes recettes. Un renommage déplace donc le dossier.
+ */
+async function moveTenantDir(fromSlug: string, toSlug: string): Promise<boolean> {
+  assertTenantSlug(fromSlug);
+  assertTenantSlug(toSlug);
+  const source = tenantDir(fromSlug);
+  const dest = tenantDir(toSlug);
+  let destExists = true;
+  try {
+    await stat(dest);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") destExists = false;
+    else throw e;
+  }
+  if (destExists) throw new AccountError("accounts.slug_busy");
+  try {
+    await stat(source);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return false;
+    throw e;
+  }
+  await rename(source, dest);
+  return true;
+}
+
+async function removeTenantDir(slug: string): Promise<void> {
+  assertTenantSlug(slug);
+  await rm(tenantDir(slug), { recursive: true, force: true });
+}
+
+function memberOrThrow(
+  actor: AccountUser,
+  target: AccountUser,
+  code: "accounts.self_rename" | "accounts.self_delete"
+): void {
+  if (target.role === "owner" || target.tenantSlug === actor.tenantSlug) {
+    throw new AccountError(code);
+  }
+}
+
+export function renameMember(
+  actorSlug: string,
+  targetLogin: string,
+  newLogin: string
+): Promise<AccountUser> {
+  return withAccountsLock(async () => {
+    const file = await loadAccounts();
+    const actor = await requireOwner(file, actorSlug);
+    const target = findByLogin(file, targetLogin);
+    if (!target) throw new AccountError("accounts.not_found");
+    memberOrThrow(actor, target, "accounts.self_rename");
+    const trimmed = newLogin.trim();
+    const nextSlug = slugOrThrow(trimmed);
+    if (conflictingUser(file, trimmed, nextSlug, target.tenantSlug)) {
+      throw new AccountError("accounts.login_taken");
+    }
+    if (trimmed === target.login) return target;
+
+    const slugChanged = nextSlug !== target.tenantSlug;
+    const moved = slugChanged ? await moveTenantDir(target.tenantSlug, nextSlug) : false;
+    const updated: AccountUser = {
+      ...target,
+      login: trimmed,
+      tenantSlug: nextSlug,
+      sessionVersion: target.sessionVersion + 1,
+    };
+    try {
+      await writeAccounts(replaceUser(file, target.tenantSlug, updated));
+    } catch (e) {
+      if (moved) {
+        await rename(tenantDir(nextSlug), tenantDir(target.tenantSlug)).catch(() => undefined);
+      }
+      throw e;
+    }
+    return updated;
+  });
+}
+
+export function deleteMember(actorSlug: string, targetLogin: string): Promise<void> {
+  return withAccountsLock(async () => {
+    const file = await loadAccounts();
+    const actor = await requireOwner(file, actorSlug);
+    const target = findByLogin(file, targetLogin);
+    if (!target) throw new AccountError("accounts.not_found");
+    memberOrThrow(actor, target, "accounts.self_delete");
+    await writeAccounts({
+      users: file.users.filter((u) => u.tenantSlug !== target.tenantSlug),
+    });
+    try {
+      await removeTenantDir(target.tenantSlug);
+    } catch (e) {
+      await writeAccounts(file);
+      throw e;
+    }
   });
 }
 

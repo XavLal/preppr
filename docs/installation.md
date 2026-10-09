@@ -53,7 +53,7 @@ docker compose logs -f app
 
 Cherchez la ligne `Code d'installation Preppr`. Sans ce code, un visiteur du réseau ne peut pas devenir administrateur. Le mot de passe fait au moins 12 caractères.
 
-Depuis **Paramètres → Comptes des foyers**, ce compte crée les autres foyers et leur transmet l’identifiant et le mot de passe. Chaque foyer a ses propres recettes et sa propre liste. Les autres comptes ne peuvent pas en créer. Chacun change son mot de passe dans **Paramètres → Mon compte**. L’administrateur réinitialise celui d’un autre foyer, ce qui déconnecte ses appareils.
+Depuis **Paramètres → Comptes des foyers**, ce compte crée les autres foyers, peut les renommer ou les supprimer, et leur transmet l’identifiant et le mot de passe. Le renommage conserve les recettes et la liste ; les appareils se reconnectent avec le nouvel identifiant. La suppression efface les données de ce foyer. Chaque foyer a ses propres recettes et sa propre liste. Les autres comptes ne peuvent pas en créer. Chacun change son mot de passe dans **Paramètres → Mon compte**. L’administrateur réinitialise celui d’un autre foyer, ce qui déconnecte ses appareils.
 
 Il n’y a pas de « mot de passe oublié » par e-mail. Si l’administrateur oublie le sien, la commande suivante le remplace. L’accès à la machine tient lieu de preuve. Le mode interactif évite de laisser le mot de passe dans l’historique du terminal :
 

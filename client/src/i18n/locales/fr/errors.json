@@ -17,7 +17,11 @@
     "login_taken": "Cet identifiant existe déjà (ou un identifiant trop proche, comme « Famille A » et « famille-a »).",
     "forbidden": "Réservé au compte administrateur.",
     "not_found": "Compte introuvable.",
-    "self_reset": "Changez votre propre mot de passe dans « Mon compte »."
+    "self_reset": "Changez votre propre mot de passe dans « Mon compte ».",
+    "self_rename": "Le compte administrateur ne peut pas être renommé.",
+    "self_delete": "Le compte administrateur ne peut pas être supprimé.",
+    "missing_login": "Nouvel identifiant requis.",
+    "slug_busy": "Un dossier de données existe déjà pour cet identifiant."
   },
   "state": {
     "missing_body": "expectedVersion et state requis.",
@@ -58,6 +62,8 @@
   "setup_failed": "Création du compte impossible",
   "password_change_failed": "Changement de mot de passe impossible",
   "account_create_failed": "Création du compte impossible",
+  "account_rename_failed": "Renommage impossible",
+  "account_delete_failed": "Suppression du compte impossible",
   "password_reset_failed": "Réinitialisation impossible",
   "generic": "Erreur"
 }

@@ -13,9 +13,12 @@ import {
   createMember,
   credentialsSchema,
   findBySlug,
+  deleteMember,
   listAccounts,
   needsSetup,
   readAccounts,
+  renameAccountSchema,
+  renameMember,
   resetPassword,
   resetPasswordSchema,
   setupOwner,
@@ -289,6 +292,41 @@ app.post("/api/accounts/:login/reset-password", async (req, reply) => {
   try {
     const user = await resetPassword(auth.sub, login, parsed.data.newPassword);
     return toPublicAccount(user);
+  } catch (e) {
+    return sendAccountError(reply, e);
+  }
+});
+
+app.post("/api/accounts/:login/rename", async (req, reply) => {
+  const auth = await parseAuth(req, reply);
+  if (!auth) return;
+  const { login } = req.params as { login: string };
+  const parsed = renameAccountSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return reply.status(400).send({
+      error: "Nouvel identifiant requis.",
+      code: "accounts.missing_login",
+    });
+  }
+  if (rejectIfLimited(reply, `accounts:${auth.sub}`, 20)) return;
+  limiter.record(`accounts:${auth.sub}`, RATE_WINDOW_MS);
+  try {
+    const user = await renameMember(auth.sub, login, parsed.data.login);
+    return toPublicAccount(user);
+  } catch (e) {
+    return sendAccountError(reply, e);
+  }
+});
+
+app.delete("/api/accounts/:login", async (req, reply) => {
+  const auth = await parseAuth(req, reply);
+  if (!auth) return;
+  const { login } = req.params as { login: string };
+  if (rejectIfLimited(reply, `accounts:${auth.sub}`, 20)) return;
+  limiter.record(`accounts:${auth.sub}`, RATE_WINDOW_MS);
+  try {
+    await deleteMember(auth.sub, login);
+    return reply.status(204).send();
   } catch (e) {
     return sendAccountError(reply, e);
   }

@@ -59,7 +59,7 @@
     "changePassword": "Change password",
     "passwordChanged": "Password changed. Other devices signed in to this account will need to sign in again.",
     "householdsTitle": "Household accounts",
-    "householdsBody": "Each account has its own recipes and its own shopping list. People in the same household share one account. Pass on the username and password yourself.",
+    "householdsBody": "Each account has its own recipes and its own shopping list. People in the same household share one account. You can rename a household or delete it: deletion removes its recipes and its list. Pass on the username and password yourself.",
     "createTitle": "Create an account",
     "newLogin": "Username for the new household",
     "newLoginHint": "Letters, digits and hyphens.",
@@ -71,6 +71,17 @@
     "newPasswordFor": "New password for {{login}}",
     "resetConfirm": "Reset",
     "resetDone": "Password for “{{login}}” reset.",
+    "rename": "Rename",
+    "renameWarning": "Recipes and the shopping list are kept. Devices signed in to this household will need to sign in again with the new username.",
+    "newLoginFor": "New username for {{login}}",
+    "renameConfirm": "Rename account",
+    "renamed": "Account renamed to “{{login}}”.",
+    "delete": "Delete",
+    "deleteWarning": "Recipes, the shopping list and the settings of “{{login}}” will be erased. This cannot be undone. Devices signed in to this household will be signed out.",
+    "deleteConfirmLabel": "Type “{{login}}” to confirm",
+    "deleteMismatch": "The username you typed does not match.",
+    "deleteConfirm": "Delete account",
+    "deleted": "Account “{{login}}” deleted.",
     "cancel": "Cancel"
   }
 }
