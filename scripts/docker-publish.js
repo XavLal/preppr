@@ -26,12 +26,14 @@ function askVersion() {
     }
 
     const tag = `${IMAGE_NAME}:${version}`;
+    const latest = `${IMAGE_NAME}:latest`;
 
     console.log(`\nBuild de ${tag}...`);
-    runCommand("docker", ["build", "-t", tag, "."]);
+    runCommand("docker", ["build", "-t", tag, "-t", latest, "."]);
 
-    console.log(`\nPush de ${tag}...`);
+    console.log(`\nPush de ${tag} et ${latest}...`);
     runCommand("docker", ["push", tag]);
+    runCommand("docker", ["push", latest]);
   });
 }
 
