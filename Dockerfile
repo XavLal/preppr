@@ -12,7 +12,8 @@ FROM node:22-bookworm-slim
 RUN apt-get update \
   && apt-get install -y --no-install-recommends util-linux \
   && rm -rf /var/lib/apt/lists/* \
-  && useradd --system --uid 1000 --home /app --shell /usr/sbin/nologin preppr
+  && groupmod -n preppr node \
+  && usermod -l preppr -d /app -s /usr/sbin/nologin node
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
