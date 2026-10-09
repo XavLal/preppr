@@ -136,6 +136,7 @@ export default function DashboardPage() {
       .filter((line) => line.length > 0);
 
     setManualBusy(true);
+    try {
     const ok = await commit((d) => {
       const id = crypto.randomUUID();
       d.recipes.push({
@@ -157,10 +158,12 @@ export default function DashboardPage() {
         steps: steps.length > 0 ? steps : [t("defaultStep")],
       });
     });
-    setManualBusy(false);
-    if (ok) {
-      resetManualForm();
-      setManualOpen(false);
+      if (ok) {
+        resetManualForm();
+        setManualOpen(false);
+      }
+    } finally {
+      setManualBusy(false);
     }
   }
 
@@ -410,6 +413,11 @@ export default function DashboardPage() {
             <div className="card modal" onClick={(e) => e.stopPropagation()}>
               <h2 id="manual-recipe-title">{t("manualTitle")}</h2>
               <form onSubmit={submitManualRecipe} className="dashboard-manual-recipe-form">
+                {error ? (
+                  <p className="error banner" role="alert">
+                    {error}
+                  </p>
+                ) : null}
                 <div className="field-grid">
                   <label className="field">
                     <span>{t("title")}</span>

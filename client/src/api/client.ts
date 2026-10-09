@@ -147,7 +147,7 @@ export async function apiGetState(authToken?: string | null): Promise<AppState> 
 
 export type PutStateResult =
   | { ok: true; state: AppState }
-  | { ok: false; conflict: AppState; message: string };
+  | { ok: false; conflict: AppState | null; message: string };
 
 function conflictStateFromResponse(data: unknown): AppState {
   if (
@@ -180,7 +180,7 @@ export async function apiPutState(
     };
   }
   if (!res.ok) {
-    throw new Error(apiErrorMessage(data, "save_failed"));
+    return { ok: false, conflict: null, message: apiErrorMessage(data, "save_failed") };
   }
   return { ok: true, state: data as AppState };
 }

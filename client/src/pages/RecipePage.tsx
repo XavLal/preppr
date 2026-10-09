@@ -25,6 +25,7 @@ export default function RecipePage() {
   const nav = useNavigate();
   const hydrate = useAppStore((s) => s.hydrate);
   const state = useAppStore((s) => s.state);
+  const error = useAppStore((s) => s.error);
   const commit = useAppStore((s) => s.commit);
 
   const [editOpen, setEditOpen] = useState(false);
@@ -326,7 +327,9 @@ export default function RecipePage() {
       .filter((s) => s.length > 0);
 
     setEditBusy(true);
-    const ok = await commit((dr) => {
+    let ok = false;
+    try {
+    ok = await commit((dr) => {
       const row = dr.recipes.find((x) => x.recipeInstanceId === recipeId);
       if (!row) return;
 
@@ -409,11 +412,12 @@ export default function RecipePage() {
 
       dr.shoppingLines = nextLines;
     });
-
-    setEditBusy(false);
-    if (ok) {
-      resetEditForm();
-      setEditOpen(false);
+      if (ok) {
+        resetEditForm();
+        setEditOpen(false);
+      }
+    } finally {
+      setEditBusy(false);
     }
   }
 
@@ -576,6 +580,11 @@ export default function RecipePage() {
               onSubmit={submitEditRecipe}
               className="dashboard-manual-recipe-form"
             >
+              {error ? (
+                <p className="error banner" role="alert">
+                  {error}
+                </p>
+              ) : null}
               <div className="field-grid">
                 <label className="field">
                   <span>{t("title")}</span>

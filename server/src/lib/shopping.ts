@@ -14,6 +14,22 @@ function mergeKey(aisle: string, unit: string, name: string): string {
   return `${aisle}||${unit}||${normalizeName(name)}`;
 }
 
+export function shoppingLineKey(aisle: string, unit: string, name: string): string {
+  return mergeKey(aisle, unit, name);
+}
+
+/** Ingrédients encore produits par les recettes au plan. Les lignes dérivées qui n’y sont plus peuvent disparaître. */
+export function recipeDerivedLineKeys(recipes: StoredRecipe[]): Set<string> {
+  const keys = new Set<string>();
+  for (const recipe of recipes) {
+    if (recipe.removedFromPlan) continue;
+    for (const ing of recipe.ingredients) {
+      keys.add(mergeKey(ing.aisle, ing.unit, ing.name));
+    }
+  }
+  return keys;
+}
+
 export function aggLineId(aisle: string, unit: string, name: string): string {
   const mk = mergeKey(aisle, unit, name);
   return `agg:${Buffer.from(mk).toString("base64url")}`;

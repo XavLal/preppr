@@ -1,3 +1,4 @@
+import { recipeDerivedLineKeys, shoppingLineKey } from "./shopping.js";
 import type { AppState } from "./types.js";
 
 export class StateValidationError extends Error {
@@ -16,14 +17,19 @@ export function validateStateTransition(
 ): void {
   const prevShop = new Map(prev.shoppingLines.map((l) => [l.id, l]));
   const nextShop = new Map(next.shoppingLines.map((l) => [l.id, l]));
+  const stillFromRecipes = recipeDerivedLineKeys(next.recipes);
 
   for (const [id, line] of prevShop) {
-    if (!nextShop.has(id) && !line.checked) {
-      throw new StateValidationError(
-        "shopping.check_before_remove",
-        "Cochez l’article avant de le retirer de la liste de courses."
-      );
-    }
+    if (nextShop.has(id) || line.checked) continue;
+    const derived = !line.manual && !line.extraIngredient;
+    const droppedByRecipeEdit =
+      derived &&
+      !stillFromRecipes.has(shoppingLineKey(line.aisle, line.unit, line.name));
+    if (droppedByRecipeEdit) continue;
+    throw new StateValidationError(
+      "shopping.check_before_remove",
+      "Cochez l’article avant de le retirer de la liste de courses."
+    );
   }
 
   const prevRecipes = new Map(prev.recipes.map((r) => [r.recipeInstanceId, r]));

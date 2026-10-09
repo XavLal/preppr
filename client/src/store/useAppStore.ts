@@ -36,6 +36,18 @@ type AppStore = {
 
 type SessionStamp = { gen: number; token: string | null };
 
+let mutationQueue: Promise<unknown> = Promise.resolve();
+
+/** Une seule écriture d’état à la fois : le flush ne doit pas croiser l’enregistrement en cours. */
+function enqueueMutation<T>(task: () => Promise<T>): Promise<T> {
+  const run = mutationQueue.then(task, task);
+  mutationQueue = run.then(
+    () => undefined,
+    () => undefined
+  );
+  return run;
+}
+
 function stampSession(): SessionStamp {
   return { gen: authGeneration(), token: getAuthToken() };
 }
@@ -198,39 +210,52 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return true;
     }
 
-    try {
-      let res = await apiPutState(expectedVersion, normalized, session.token);
+    return enqueueMutation(async () => {
       if (!sameSession(session)) return false;
-      if (res.ok) {
-        const st = normalizeAppState(res.state);
-        set({ state: st, pendingSync: false, error: null });
-        void persistCache(st, false, session);
-        return true;
+      try {
+        let res = await apiPutState(expectedVersion, normalized, session.token);
+        if (!sameSession(session)) return false;
+        if (res.ok) {
+          const st = normalizeAppState(res.state);
+          set({ state: st, pendingSync: false, error: null });
+          void persistCache(st, false, session);
+          return true;
+        }
+        if (!res.conflict) {
+          set({ state: cur, error: res.message, pendingSync: false });
+          void persistCache(cur, false, session);
+          return false;
+        }
+        let server = normalizeAppState(res.conflict);
+        let merged = mergeServerWithLocalDraft(server, normalized);
+        set({ state: merged, error: res.message, pendingSync: true });
+        void persistCache(merged, true, session);
+        res = await apiPutState(server.version, merged, session.token);
+        if (!sameSession(session)) return false;
+        if (res.ok) {
+          const st = normalizeAppState(res.state);
+          set({ state: st, pendingSync: false, error: null });
+          void persistCache(st, false, session);
+          return true;
+        }
+        if (!res.conflict) {
+          set({ state: cur, error: res.message, pendingSync: false });
+          void persistCache(cur, false, session);
+          return false;
+        }
+        server = normalizeAppState(res.conflict);
+        merged = mergeServerWithLocalDraft(server, get().state ?? merged);
+        set({
+          state: merged,
+          error: res.message,
+          pendingSync: true,
+        });
+        void persistCache(merged, true, session);
+        return false;
+      } catch {
+        return sameSession(session);
       }
-      let server = normalizeAppState(res.conflict);
-      let merged = mergeServerWithLocalDraft(server, normalized);
-      set({ state: merged, error: res.message, pendingSync: true });
-      void persistCache(merged, true, session);
-      res = await apiPutState(server.version, merged, session.token);
-      if (!sameSession(session)) return false;
-      if (res.ok) {
-        const st = normalizeAppState(res.state);
-        set({ state: st, pendingSync: false, error: null });
-        void persistCache(st, false, session);
-        return true;
-      }
-      server = normalizeAppState(res.conflict);
-      merged = mergeServerWithLocalDraft(server, get().state ?? merged);
-      set({
-        state: merged,
-        error: res.message,
-        pendingSync: true,
-      });
-      void persistCache(merged, true, session);
-      return false;
-    } catch {
-      return sameSession(session);
-    }
+    });
   },
 
   clearAllRecipes: async () => {
@@ -255,6 +280,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         set({ state: st, pendingSync: false, error: null });
         void persistCache(st, false, session);
         return true;
+      }
+      if (!res.conflict) {
+        set({ error: res.message, pendingSync: false });
+        return false;
       }
       const conflict = normalizeAppState(res.conflict);
       set({
@@ -296,6 +325,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         void persistCache(st, false, session);
         return true;
       }
+      if (!res.conflict) {
+        set({ error: res.message, pendingSync: false });
+        return false;
+      }
       const conflict = normalizeAppState(res.conflict);
       set({
         state: conflict,
@@ -313,34 +346,36 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 
-  flushPendingSync: async () => {
-    const session = stampSession();
-    const { pendingSync, state } = get();
-    if (!pendingSync || !state) return;
-    if (typeof navigator !== "undefined" && !navigator.onLine) return;
-    try {
-      let server = normalizeAppState(await apiGetState(session.token));
-      if (!sameSession(session)) return;
-      let merged = mergeServerWithLocalDraft(server, state);
-      let res = await apiPutState(server.version, merged, session.token);
-      if (!sameSession(session)) return;
-      if (res.ok) {
-        const st = normalizeAppState(res.state);
-        set({ state: st, pendingSync: false, error: null });
-        void persistCache(st, false, session);
-        return;
+  flushPendingSync: () =>
+    enqueueMutation(async () => {
+      const session = stampSession();
+      const { pendingSync, state } = get();
+      if (!pendingSync || !state) return;
+      if (typeof navigator !== "undefined" && !navigator.onLine) return;
+      try {
+        let server = normalizeAppState(await apiGetState(session.token));
+        if (!sameSession(session)) return;
+        let merged = mergeServerWithLocalDraft(server, state);
+        let res = await apiPutState(server.version, merged, session.token);
+        if (!sameSession(session)) return;
+        if (res.ok) {
+          const st = normalizeAppState(res.state);
+          set({ state: st, pendingSync: false, error: null });
+          void persistCache(st, false, session);
+          return;
+        }
+        if (!res.conflict) return;
+        server = normalizeAppState(res.conflict);
+        merged = mergeServerWithLocalDraft(server, state);
+        res = await apiPutState(server.version, merged, session.token);
+        if (!sameSession(session)) return;
+        if (res.ok) {
+          const st = normalizeAppState(res.state);
+          set({ state: st, pendingSync: false, error: null });
+          void persistCache(st, false, session);
+        }
+      } catch {
+        /* toujours hors ligne ou erreur */
       }
-      server = normalizeAppState(res.conflict);
-      merged = mergeServerWithLocalDraft(server, state);
-      res = await apiPutState(server.version, merged, session.token);
-      if (!sameSession(session)) return;
-      if (res.ok) {
-        const st = normalizeAppState(res.state);
-        set({ state: st, pendingSync: false, error: null });
-        void persistCache(st, false, session);
-      }
-    } catch {
-      /* toujours hors ligne ou erreur */
-    }
-  },
+    }),
 }));

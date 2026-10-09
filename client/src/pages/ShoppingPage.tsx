@@ -204,33 +204,36 @@ export default function ShoppingPage() {
     e.preventDefault();
     const q = Number(qty);
     setFormBusy(true);
-    let ok: boolean;
-    if (editingLineId === null) {
-      ok = await commit((d) => {
-        d.shoppingLines.push({
-          id: crypto.randomUUID(),
-          name: name.trim(),
-          quantity: Number.isFinite(q) ? q : 1,
-          unit,
-          aisle,
-          checked: false,
-          manual: true,
+    try {
+      let ok: boolean;
+      if (editingLineId === null) {
+        ok = await commit((d) => {
+          d.shoppingLines.push({
+            id: crypto.randomUUID(),
+            name: name.trim(),
+            quantity: Number.isFinite(q) ? q : 1,
+            unit,
+            aisle,
+            checked: false,
+            manual: true,
+          });
         });
-      });
-    } else {
-      const id = editingLineId;
-      ok = await commit((d) => {
-        const line = d.shoppingLines.find((x) => x.id === id);
-        if (line) {
-          line.name = name.trim();
-          line.quantity = Number.isFinite(q) ? q : line.quantity;
-          line.unit = unit;
-          line.aisle = aisle;
-        }
-      });
+      } else {
+        const id = editingLineId;
+        ok = await commit((d) => {
+          const line = d.shoppingLines.find((x) => x.id === id);
+          if (line) {
+            line.name = name.trim();
+            line.quantity = Number.isFinite(q) ? q : line.quantity;
+            line.unit = unit;
+            line.aisle = aisle;
+          }
+        });
+      }
+      if (ok) closeModal();
+    } finally {
+      setFormBusy(false);
     }
-    setFormBusy(false);
-    if (ok) closeModal();
   }
 
   const isEdit = editingLineId !== null;
@@ -311,6 +314,11 @@ export default function ShoppingPage() {
               {isEdit ? t("editIngredient") : t("addIngredientTitle")}
             </h2>
             <form onSubmit={submitForm} className="shop-ingredient-form">
+              {error ? (
+                <p className="error banner" role="alert">
+                  {error}
+                </p>
+              ) : null}
               <label className="field">
                 <span>{t("name")}</span>
                 <input
