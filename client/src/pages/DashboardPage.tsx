@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { randomId } from "@/lib/randomId";
 import { useAppStore } from "@/store/useAppStore";
 
 export default function DashboardPage() {
@@ -138,7 +139,7 @@ export default function DashboardPage() {
     setManualBusy(true);
     try {
     const ok = await commit((d) => {
-      const id = crypto.randomUUID();
+      const id = randomId();
       d.recipes.push({
         recipeInstanceId: id,
         sourceRecipeId: `manual-${id}`,

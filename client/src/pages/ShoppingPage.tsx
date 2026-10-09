@@ -7,6 +7,7 @@ import {
   moveLineStepInAisle,
   moveLineWithinAisle,
 } from "@/lib/reorderShoppingAisle";
+import { randomId } from "@/lib/randomId";
 import { useAppStore } from "@/store/useAppStore";
 import {
   aisleForSelect,
@@ -209,7 +210,7 @@ export default function ShoppingPage() {
       if (editingLineId === null) {
         ok = await commit((d) => {
           d.shoppingLines.push({
-            id: crypto.randomUUID(),
+            id: randomId(),
             name: name.trim(),
             quantity: Number.isFinite(q) ? q : 1,
             unit,
